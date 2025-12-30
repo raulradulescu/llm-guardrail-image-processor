@@ -1,0 +1,42 @@
+# Default configuration for ImageGuard (Phases 1–3).
+
+general:
+  log_level: INFO
+  max_image_size_mb: 50
+  timeout_seconds: 30
+  target_resolution: 1920
+  normalize_format: RGB
+  fail_open: true
+
+modules:
+  text_extraction:
+    enabled: true
+    weight: 2.0
+    languages: ["eng"]
+    confidence_threshold: 0.6
+    pattern_path: patterns.yaml
+  hidden_text:
+    enabled: true
+    weight: 1.5
+    thresholds: [50, 100, 150, 200, 250]
+    analyze_corners: true
+    analyze_borders: true
+  frequency_analysis:
+    enabled: true
+    weight: 1.0
+    wavelet_enabled: true
+    baseline_model: data/frequency_baseline.json
+
+scoring:
+  thresholds:
+    safe: 0.3
+    suspicious: 0.6
+    dangerous: 0.8
+
+api:
+  host: 0.0.0.0
+  port: 8080
+
+output:
+  include_extracted_text: true
+  max_text_length: 10000

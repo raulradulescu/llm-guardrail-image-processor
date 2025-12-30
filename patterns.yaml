@@ -1,0 +1,39 @@
+# Injection Pattern Database (Phase 1–3)
+
+patterns:
+  - id: ignore_instructions
+    category: direct_instruction
+    severity: 0.9
+    regex: '(?i)(ignore|disregard|forget)\s+(all\s+)?(previous|prior|above|your)\s+(instructions?|prompts?|rules?)'
+    description: "Direct instruction override attempt"
+
+  - id: role_manipulation
+    category: identity
+    severity: 0.85
+    regex: '(?i)(you\s+are\s+now|pretend\s+(to\s+be|you\s+are)|act\s+as|your\s+new\s+role)'
+    description: "Attempt to change AI identity"
+
+  - id: system_prompt_reference
+    category: context_manipulation
+    severity: 0.8
+    regex: '(?i)(system\s+prompt|end\s+of\s+(system|instructions)|<\|system\|>|\[INST\])'
+    description: "Reference to system prompt structure"
+
+  - id: jailbreak_keywords
+    category: jailbreak
+    severity: 0.95
+    keywords:
+      - 'DAN'
+      - 'developer mode'
+      - 'jailbreak'
+      - 'no restrictions'
+      - 'bypass'
+      - 'unlock'
+    description: "Common jailbreak terminology"
+
+  - id: encoded_base64
+    category: obfuscation
+    severity: 0.7
+    regex: '(?:[A-Za-z0-9+/]{4}){10,}(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?'
+    min_length: 40
+    description: "Potential Base64 encoded content"

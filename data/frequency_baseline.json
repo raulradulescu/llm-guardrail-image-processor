@@ -1,0 +1,8 @@
+{
+  "fft_high_freq_ratio_mean": 0.2,
+  "fft_high_freq_ratio_std": 0.05,
+  "dct_hf_lf_ratio_mean": 0.2,
+  "dct_hf_lf_ratio_std": 0.05,
+  "wavelet_detail_ratio_mean": 0.2,
+  "wavelet_detail_ratio_std": 0.05
+}

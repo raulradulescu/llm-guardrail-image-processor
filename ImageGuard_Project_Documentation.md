@@ -912,7 +912,7 @@ modules:
     enabled: true
     weight: 2.0
     ocr_engine: tesseract
-    languages: ['eng', 'fra', 'deu', 'spa']
+    languages: ['eng', 'ro'] # in the future: 'fra', 'deu', 'spa', 'ro', 
     confidence_threshold: 0.6
     pattern_database: /etc/imageguard/patterns.yaml
     
