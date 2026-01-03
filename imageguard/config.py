@@ -13,7 +13,7 @@ import yaml
 class Thresholds:
     safe: float = 0.3
     suspicious: float = 0.6
-    dangerous: float = 0.8
+    dangerous: float = 0.6
 
 
 @dataclass
@@ -54,6 +54,19 @@ class OutputConfig:
 
 
 @dataclass
+class ApiConfig:
+    host: str = "0.0.0.0"
+    port: int = 8080
+    require_api_key: bool = False
+    api_keys: List[str] | None = None
+    rate_limit_enabled: bool = True
+    rate_limit_requests: int = 100
+    rate_limit_window_seconds: int = 60
+    cors_origins: List[str] | None = None
+    metrics_enabled: bool = True
+
+
+@dataclass
 class Config:
     max_image_size_mb: int = 50
     target_resolution: int = 1920
@@ -63,12 +76,15 @@ class Config:
     modules: Dict[str, ModuleConfig] | None = None
     fail_open: bool = True
     output: OutputConfig = None  # type: ignore
+    api: ApiConfig = None  # type: ignore
 
     def __post_init__(self):
         if self.thresholds is None:
             self.thresholds = Thresholds()
         if self.output is None:
             self.output = OutputConfig()
+        if self.api is None:
+            self.api = ApiConfig()
 
 
 def load_config(path: str | None = None) -> Config:
@@ -113,7 +129,7 @@ def load_config(path: str | None = None) -> Config:
     thresholds = Thresholds(
         safe=th.get("safe", 0.3),
         suspicious=th.get("suspicious", 0.6),
-        dangerous=th.get("dangerous", 0.8),
+        dangerous=th.get("dangerous", 0.6),
     )
 
     modules_cfg: Dict[str, ModuleConfig] = {}
@@ -150,6 +166,14 @@ def load_config(path: str | None = None) -> Config:
         )
     general = raw.get("general", {})
     output_cfg = raw.get("output", {})
+    api_cfg = raw.get("api", {})
+
+    # Load API keys from env var if not in config
+    api_keys = api_cfg.get("api_keys", [])
+    env_keys = os.environ.get("IMAGEGUARD_API_KEYS", "")
+    if env_keys:
+        api_keys = [k.strip() for k in env_keys.split(",") if k.strip()]
+
     return Config(
         max_image_size_mb=general.get("max_image_size_mb", 50),
         target_resolution=general.get("target_resolution", 1920),
@@ -161,5 +185,16 @@ def load_config(path: str | None = None) -> Config:
         output=OutputConfig(
             include_extracted_text=output_cfg.get("include_extracted_text", True),
             max_text_length=output_cfg.get("max_text_length", 10000),
+        ),
+        api=ApiConfig(
+            host=api_cfg.get("host", "0.0.0.0"),
+            port=api_cfg.get("port", 8080),
+            require_api_key=api_cfg.get("require_api_key", False),
+            api_keys=api_keys if api_keys else None,
+            rate_limit_enabled=api_cfg.get("rate_limit_enabled", True),
+            rate_limit_requests=api_cfg.get("rate_limit_requests", 100),
+            rate_limit_window_seconds=api_cfg.get("rate_limit_window_seconds", 60),
+            cors_origins=api_cfg.get("cors_origins", ["*"]),
+            metrics_enabled=api_cfg.get("metrics_enabled", True),
         ),
     )

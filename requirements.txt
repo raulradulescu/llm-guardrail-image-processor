@@ -8,3 +8,5 @@ PyYAML
 pyzbar
 fastapi
 uvicorn[standard]
+prometheus-client
+slowapi

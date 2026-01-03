@@ -6,7 +6,7 @@
 
 LLM-free guardrail to detect prompt injection attacks in images before they reach multimodal LLMs.
 
-## Current State (January 2025)
+## Current State (January 2026)
 
 | Item | Status |
 |------|--------|
@@ -23,16 +23,28 @@ LLM-free guardrail to detect prompt injection attacks in images before they reac
 
 ```
 imageguard/
-├── analyzer.py      # Main orchestrator - calls all modules
-├── api.py           # FastAPI REST endpoints (/analyze, /health)
-├── cli.py           # CLI entry point
-├── config.py        # YAML + env var config loading
-├── text_analysis.py # Phase 1: Tesseract OCR + pattern matching
-├── hidden_text.py   # Phase 2: Multi-threshold binarization, CLAHE
-├── frequency.py     # Phase 3: FFT, DCT, Wavelet analysis
-├── patterns.py      # Regex/keyword pattern matcher
-├── scoring.py       # Weighted score aggregation
-└── preprocess.py    # Image normalization (resize, RGB convert)
+├── analyzer.py       # Main orchestrator - calls all modules
+├── api.py            # FastAPI REST endpoints (/analyze, /health)
+├── cli.py            # CLI entry point
+├── config.py         # YAML + env var config loading
+├── text_analysis.py  # Phase 1: Tesseract OCR + pattern matching
+├── hidden_text.py    # Phase 2: Multi-threshold binarization, CLAHE
+├── frequency.py      # Phase 3: FFT, DCT, Wavelet analysis
+├── steganography.py  # Phase 4: LSB, chi-square, RS analysis
+├── structural.py     # Phase 5: QR/barcode, screenshot detection
+├── calibration.py    # Phase 6: Platt scaling confidence calibration
+├── patterns.py       # Regex/keyword pattern matcher
+├── scoring.py        # Weighted score aggregation
+└── preprocess.py     # Image normalization (resize, RGB convert)
+
+scripts/
+├── calibrate_confidence.py  # Fit Platt scaling parameters
+├── calibrate_weights.py     # Tune module weights
+└── load_test.py             # Performance load testing
+
+k8s/
+├── deployment.yaml   # Kubernetes deployment spec
+└── service.yaml      # Kubernetes service spec
 ```
 
 ## Key Files
@@ -43,30 +55,43 @@ imageguard/
 | `config.yaml` | Runtime config (thresholds, weights, API settings) |
 | `patterns.yaml` | Injection patterns (regex + keywords) |
 | `README.md` | User-facing documentation |
+| `Dockerfile` | Container build for deployment |
+| `SECURITY_REVIEW.md` | Security checklist with open/resolved items |
+| `data/calibration.json` | Platt scaling parameters for confidence |
+| `data/frequency_baseline.json` | Baseline model for frequency analysis |
 
-## Next Up: Production Hardening
+## Phase 6 Artifacts
 
-- Add API auth + rate limiting
-- Add metrics export (Prometheus)
-- Add richer marked image overlays
+- **Calibration**: `data/calibration.json` + `scripts/calibrate_confidence.py`
+- **Weight tuning**: `scripts/calibrate_weights.py`
+- **Load testing**: `scripts/load_test.py`
+- **Docker**: `Dockerfile`
+- **Kubernetes**: `k8s/deployment.yaml`, `k8s/service.yaml`
+- **Security review**: `SECURITY_REVIEW.md`
 
-## Backlog: Phase 5 (Structural)
+## Production Hardening (Complete)
 
-Create `imageguard/structural.py`:
-- QR/barcode detection via pyzbar
-- Screenshot detection (UI element heuristics)
-- **PRD Reference:** Section 5.5
+- [x] API key authentication (`X-API-Key` header, configurable)
+- [x] Rate limiting (sliding window, configurable)
+- [x] Prometheus metrics endpoint (`/metrics`)
+- [x] CORS middleware (configurable origins)
+- [x] Batch size limits (max 10 images)
+- [ ] Magic byte validation (recommended)
+- [ ] Marked image overlays (recommended)
 
 ## Design Decisions
 
 1. **No LLM dependency** - Classical CV/pattern matching only
 2. **Fail-open default** - Configurable to fail-closed
-3. **Weighted scoring** - text(2.0), hidden(1.5), frequency(1.0)
+3. **Weighted scoring** - text(2.0), hidden(1.5), structural(1.2), frequency(1.0), stego(1.0)
 4. **Classification tiers** - SAFE (<0.3), SUSPICIOUS (0.3-0.6), DANGEROUS (>0.6)
 
 ## Quick Commands
 
 ```bash
+# Activate virtual environment first
+source .venv/bin/activate
+
 # Run all tests
 pytest tests/ -v
 
@@ -78,6 +103,25 @@ python -m imageguard.cli analyze image.png
 
 # Analyze via API
 curl -X POST http://localhost:8080/api/v1/analyze -F "image=@test.png"
+
+# With API key (if enabled)
+curl -X POST http://localhost:8080/api/v1/analyze \
+  -H "X-API-Key: your-api-key" \
+  -F "image=@test.png"
+
+# Get Prometheus metrics
+curl http://localhost:8080/metrics
+
+# Build Docker image
+docker build -t imageguard:latest .
+
+# Run with API keys
+docker run -p 8080:8080 \
+  -e IMAGEGUARD_API_KEYS="key1,key2" \
+  imageguard:latest
+
+# Run calibration script
+python scripts/calibrate_confidence.py --input data/training.json --out data/calibration.json
 ```
 
 ## PRD Quick Navigation

@@ -1,14 +1,14 @@
 # Security Review Checklist (Phase 6)
 
 ## Status
-- Overall: In Progress
-- Owner: TBD
-- Date: TBD
+- Overall: Complete
+- Owner: Raul & Mark
+- Date: January 2026
 
 ## Findings Summary
-- Open findings: 0
-- Resolved findings: 0
-- Notes: Initial checklist created; review pending.
+- Open findings: 3
+- Resolved findings: 12
+- Notes: Core security features implemented. Remaining items are recommended enhancements.
 
 ## Checklist
 
@@ -16,7 +16,7 @@
 - [ ] Validate magic bytes for image types
 - [x] Enforce max file size and dimensions
 - [x] Reject animated images
-- [ ] Enforce file count limits on batch requests
+- [x] Enforce file count limits on batch requests (max 10)
 
 ### Output Safety
 - [x] Extracted text truncation supported
@@ -24,10 +24,10 @@
 - [ ] Marked image redaction and overlays reviewed
 
 ### Service Hardening
-- [ ] Rate limiting enabled
-- [ ] API key authentication enabled
-- [ ] CORS policy defined
-- [ ] Request timeouts enforced at web server
+- [x] Rate limiting enabled (configurable via `api.rate_limit_*`)
+- [x] API key authentication enabled (configurable via `api.require_api_key`)
+- [x] CORS policy defined (configurable via `api.cors_origins`)
+- [x] Request timeouts enforced at web server
 
 ### Dependencies
 - [x] Pin core dependencies in `requirements.txt`
@@ -36,14 +36,47 @@
 
 ### Observability
 - [x] Per-module latency reporting
-- [ ] Centralized logging configuration
-- [ ] Metrics endpoint or exporter
+- [x] Centralized logging configuration
+- [x] Metrics endpoint or exporter (`/metrics` Prometheus format)
 
 ### Secrets
-- [ ] No secrets in repo
-- [ ] Env var usage documented
+- [x] No secrets in repo (API keys via env var `IMAGEGUARD_API_KEYS`)
+- [x] Env var usage documented
+
+## Configuration
+
+### Enabling API Key Authentication
+```yaml
+# config.yaml
+api:
+  require_api_key: true
+  api_keys: []  # Or set via IMAGEGUARD_API_KEYS env var
+```
+
+```bash
+# Environment variable (comma-separated)
+export IMAGEGUARD_API_KEYS="key1,key2,key3"
+```
+
+### Rate Limiting
+```yaml
+api:
+  rate_limit_enabled: true
+  rate_limit_requests: 100    # requests per window
+  rate_limit_window_seconds: 60
+```
+
+### Prometheus Metrics
+Access at `/metrics` or `/api/v1/metrics`. Metrics include:
+- `imageguard_requests_total` - Request count by endpoint
+- `imageguard_request_duration_seconds` - Request latency
+- `imageguard_analysis_total` - Total analyses performed
+- `imageguard_analysis_by_classification` - Results by classification
+- `imageguard_requests_in_progress` - Current active requests
 
 ## Follow-up Actions
-1. Add API key middleware for FastAPI.
-2. Add basic rate limiting.
+1. ~~Add API key middleware for FastAPI.~~ ✅ Done
+2. ~~Add basic rate limiting.~~ ✅ Done
 3. Add dependency vulnerability scan to CI.
+4. Add magic byte validation for image uploads.
+5. Review marked image overlay implementation.

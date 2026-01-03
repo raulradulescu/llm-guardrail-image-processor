@@ -4,7 +4,7 @@
 
 **Version:** 0.2.1
 **Status:** Partially Implemented (Phases 1-3 Complete)
-**Last Updated:** 3 January 2025
+**Last Updated:** 3 January 2026
 **Document Owner:** Raul & Mark
 
 ---
@@ -14,8 +14,8 @@
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | 0.1 | 17 December 2024 | Raul & Mark | Initial draft |
-| 0.2 | 2 January 2025 | Raul & Mark | Phase 1-3 implementation updates, API documentation expansion, inconsistency fixes, baseline format standardization |
-| 0.2.1 | 3 January 2025 | Raul & Mark | Completed Sections 1-3 (use cases, threat model, success criteria), added calibration/API key formats, expanded glossary (45+ terms), enhanced references (31 citations) |
+| 0.2 | 2 January 2026 | Raul & Mark | Phase 1-3 implementation updates, API documentation expansion, inconsistency fixes, baseline format standardization |
+| 0.2.1 | 3 January 2026 | Raul & Mark | Completed Sections 1-3 (use cases, threat model, success criteria), added calibration/API key formats, expanded glossary (45+ terms), enhanced references (31 citations) |
 
 ---
 
@@ -1731,6 +1731,7 @@ ImageGuard exposes a RESTful API for image analysis. The API follows OpenAPI 3.0
 | GET | `/health` | Health check and readiness |
 | GET | `/config` | Get current configuration |
 | GET | `/patterns` | List loaded patterns |
+| GET | `/metrics` | Prometheus metrics endpoint |
 
 ---
 
@@ -2372,11 +2373,55 @@ List loaded injection patterns.
 
 ---
 
-### 7.8 CLI Interface
+### 7.8 GET /metrics
+
+Prometheus-compatible metrics endpoint for monitoring and alerting.
+
+#### 7.8.1 Response
+
+**Content-Type:** `text/plain`
+
+```
+# HELP imageguard_requests_total Total number of requests
+# TYPE imageguard_requests_total counter
+imageguard_requests_total{endpoint="/api/v1/analyze"} 1523
+imageguard_requests_total{endpoint="/api/v1/health"} 892
+
+# HELP imageguard_request_duration_seconds Request duration in seconds
+# TYPE imageguard_request_duration_seconds summary
+imageguard_request_duration_seconds_sum{endpoint="/api/v1/analyze"} 342.5
+imageguard_request_duration_seconds_count{endpoint="/api/v1/analyze"} 1523
+
+# HELP imageguard_analysis_total Total number of image analyses
+# TYPE imageguard_analysis_total counter
+imageguard_analysis_total 1523
+
+# HELP imageguard_analysis_by_classification Analysis results by classification
+# TYPE imageguard_analysis_by_classification counter
+imageguard_analysis_by_classification{classification="SAFE"} 1200
+imageguard_analysis_by_classification{classification="SUSPICIOUS"} 280
+imageguard_analysis_by_classification{classification="DANGEROUS"} 43
+
+# HELP imageguard_requests_in_progress Current number of requests being processed
+# TYPE imageguard_requests_in_progress gauge
+imageguard_requests_in_progress 3
+```
+
+#### 7.8.2 Configuration
+
+```yaml
+# config.yaml
+api:
+  metrics_enabled: true  # Set to false to disable /metrics endpoint
+```
+
+---
+
+### 7.9 CLI Interface
 
 The CLI provides command-line access to ImageGuard functionality.
 
-#### 7.8.1 Commands
+#### 7.9.1 Commands
 
 ```bash
 # Display help
@@ -2398,7 +2443,7 @@ imageguard config validate [OPTIONS]
 imageguard info
 ```
 
-#### 7.8.2 Analyze Command Options
+#### 7.9.2 Analyze Command Options
 
 ```bash
 imageguard analyze <path> [OPTIONS]
@@ -2453,7 +2498,7 @@ Examples:
   imageguard analyze image.png -v --json
 ```
 
-#### 7.8.3 Example CLI Output
+#### 7.9.3 Example CLI Output
 
 **Standard Output:**
 
@@ -2494,15 +2539,15 @@ Recommendation: Manual review recommended
 
 ---
 
-### 7.9 Python SDK
+### 7.10 Python SDK
 
-#### 7.9.1 Installation
+#### 7.10.1 Installation
 
 ```bash
 pip install imageguard
 ```
 
-#### 7.9.2 Basic Usage
+#### 7.10.2 Basic Usage
 
 ```python
 from imageguard import ImageGuard, Classification
@@ -2525,7 +2570,7 @@ if result.text_extraction.score > 0.5:
     print(f"Text patterns found: {result.text_extraction.patterns_matched}")
 ```
 
-#### 7.9.3 Advanced Configuration
+#### 7.10.3 Advanced Configuration
 
 ```python
 from imageguard import ImageGuard, Config, ModuleConfig
@@ -2557,7 +2602,7 @@ if result.marked_image:
     result.save_marked_image("output_marked.png")
 ```
 
-#### 7.9.4 Batch Processing
+#### 7.10.4 Batch Processing
 
 ```python
 from imageguard import ImageGuard
@@ -2577,7 +2622,7 @@ for result in results:
         print(f"DANGEROUS: {result.filename} (score: {result.risk_score})")
 ```
 
-#### 7.9.5 Async Support
+#### 7.10.5 Async Support
 
 ```python
 import asyncio
@@ -3875,28 +3920,37 @@ spec:
 
 ### 12.3 Rate Limiting
 
-```python
-# Rate limiting configuration
-rate_limits = {
-    "per_ip": {
-        "requests_per_minute": 60,
-        "requests_per_hour": 1000,
-        "burst": 10
-    },
-    "per_api_key": {
-        "requests_per_minute": 1000,
-        "requests_per_hour": 50000,
-        "burst": 100
-    },
-    "global": {
-        "requests_per_second": 1000
-    }
+Rate limiting is implemented using a sliding window algorithm to prevent abuse.
+
+**Configuration:**
+
+```yaml
+# config.yaml
+api:
+  rate_limit_enabled: true
+  rate_limit_requests: 100      # requests per window
+  rate_limit_window_seconds: 60 # window duration
+```
+
+**Response when rate limited:**
+
+```json
+{
+  "error": "Rate limit exceeded",
+  "retry_after_seconds": 60
 }
 ```
 
+HTTP Status: `429 Too Many Requests`
+
+**Notes:**
+- Health and metrics endpoints are exempt from rate limiting
+- Rate limits are per-client-IP (using `X-Forwarded-For` header if behind proxy)
+- In-memory rate limiting (not shared across instances)
+
 ### 12.4 API Authentication
 
-ImageGuard supports multiple authentication methods:
+ImageGuard supports API key authentication via the `X-API-Key` header.
 
 #### 12.4.1 API Key Authentication
 
@@ -3907,54 +3961,34 @@ curl -X POST "http://localhost:8080/api/v1/analyze" \
   -F "image=@test.png"
 ```
 
-**Configuration:**
+**Configuration via config.yaml:**
 
 ```yaml
 # config.yaml
 api:
-  authentication:
-    enabled: true
-    method: api_key  # Options: api_key, jwt, oauth2
-    api_key:
-      header_name: X-API-Key
-      keys_file: /etc/imageguard/api_keys.yaml
+  require_api_key: true
+  api_keys: ["key1", "key2", "key3"]  # List of valid keys
 ```
 
-**API Keys File:**
+**Configuration via Environment Variable:**
 
-```yaml
-# api_keys.yaml
-keys:
-  - key: "sk_live_abc123..."
-    name: "Production Client"
-    rate_limit_tier: "premium"
-    enabled: true
-    
-  - key: "sk_test_xyz789..."
-    name: "Test Client"
-    rate_limit_tier: "standard"
-    enabled: true
+```bash
+# Comma-separated list of valid API keys
+export IMAGEGUARD_API_KEYS="key1,key2,key3"
 ```
 
-#### 12.4.2 JWT Authentication
+**Error Responses:**
+
+| Status | Condition | Response |
+|--------|-----------|----------|
+| 401 | Missing API key | `{"detail": "API key required"}` |
+| 403 | Invalid API key | `{"detail": "Invalid API key"}` |
+
+#### 12.4.2 No Authentication (Development)
 
 ```yaml
 api:
-  authentication:
-    method: jwt
-    jwt:
-      secret: "${JWT_SECRET}"  # From environment
-      algorithm: HS256
-      issuer: "your-auth-server"
-      audience: "imageguard"
-```
-
-#### 12.4.3 No Authentication (Development)
-
-```yaml
-api:
-  authentication:
-    enabled: false  # WARNING: Development only
+  require_api_key: false  # WARNING: Development only
 ```
 
 ### 12.5 TLS/HTTPS
@@ -4095,7 +4129,7 @@ groups:
 | Additional OCR languages (fra, deu, spa) | High | Low |
 | GPU acceleration for frequency analysis | Medium | Medium |
 | WebSocket API for streaming | Medium | Medium |
-| Prometheus metrics integration | High | Low |
+| ~~Prometheus metrics integration~~ | ✅ Complete | Low |
 | ROT13 detection | Low | Low |
 | Leetspeak detection | Low | Medium |
 | Unicode homoglyph detection | Medium | High |

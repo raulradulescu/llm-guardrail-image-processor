@@ -57,7 +57,7 @@ def main() -> int:
     parser.add_argument("--epochs", type=int, default=500, help="Training epochs")
     parser.add_argument("--safe", type=float, default=0.3, help="Safe threshold")
     parser.add_argument("--suspicious", type=float, default=0.6, help="Suspicious threshold")
-    parser.add_argument("--dangerous", type=float, default=0.8, help="Dangerous threshold")
+    parser.add_argument("--dangerous", type=float, default=0.6, help="Dangerous threshold")
     args = parser.parse_args()
 
     data = json.loads(Path(args.input).read_text(encoding="utf-8"))

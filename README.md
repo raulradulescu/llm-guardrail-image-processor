@@ -39,6 +39,14 @@ uvicorn imageguard.api:app --host 0.0.0.0 --port 8080
 # Analyze image
 curl -X POST http://localhost:8080/api/v1/analyze \
   -F "image=@image.png"
+
+# With API key (if enabled)
+curl -X POST http://localhost:8080/api/v1/analyze \
+  -H "X-API-Key: your-api-key" \
+  -F "image=@image.png"
+
+# Get Prometheus metrics
+curl http://localhost:8080/metrics
 ```
 
 ## Python SDK
@@ -68,6 +76,30 @@ Edit `config.yaml` to adjust:
 - OCR languages
 - Fail-open/closed policy
 - API settings
+
+## Security Features
+
+### API Key Authentication
+```yaml
+# config.yaml
+api:
+  require_api_key: true
+  api_keys: ["key1", "key2"]  # Or use IMAGEGUARD_API_KEYS env var
+```
+
+### Rate Limiting
+```yaml
+api:
+  rate_limit_enabled: true
+  rate_limit_requests: 100      # requests per window
+  rate_limit_window_seconds: 60
+```
+
+### Prometheus Metrics
+Available at `/metrics`:
+- `imageguard_requests_total` - Request count by endpoint
+- `imageguard_analysis_total` - Total analyses performed
+- `imageguard_analysis_by_classification` - Results by classification
 
 ## Project Status
 

@@ -64,6 +64,17 @@ scoring:
 api:
   host: 0.0.0.0
   port: 8080
+  # API key authentication (set IMAGEGUARD_API_KEYS env var or list keys here)
+  require_api_key: false
+  api_keys: []  # Add keys here or use IMAGEGUARD_API_KEYS env var (comma-separated)
+  # Rate limiting
+  rate_limit_enabled: true
+  rate_limit_requests: 100  # requests per window
+  rate_limit_window_seconds: 60
+  # CORS
+  cors_origins: ["*"]
+  # Metrics
+  metrics_enabled: true
 
 output:
   include_extracted_text: true
