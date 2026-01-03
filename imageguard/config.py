@@ -22,9 +22,29 @@ class ModuleConfig:
     weight: float = 1.0
     languages: List[str] | None = None
     thresholds: List[int] | None = None
+    contrast_thresholds: List[int] | None = None
     wavelet_enabled: bool = True
     pattern_path: str | None = None
     baseline_model: str | None = None
+    analyze_corners: bool = True
+    analyze_borders: bool = True
+    edge_density_threshold: float = 0.15
+    edge_grid_size: int = 4
+    fft_enabled: bool = True
+    dct_enabled: bool = True
+    fft_threshold: float = 0.7
+    dct_threshold: float = 0.6
+    wavelet_threshold: float = 0.5
+    wavelet_type: str = "haar"
+    wavelet_levels: int = 1
+    lsb_analysis: bool = True
+    chi_square_test: bool = True
+    rs_analysis: bool = True
+    spa_analysis: bool = False
+    detect_qr: bool = True
+    detect_barcodes: bool = True
+    detect_screenshots: bool = True
+    analyze_decoded_content: bool = True
 
 
 @dataclass
@@ -39,6 +59,7 @@ class Config:
     target_resolution: int = 1920
     timeout_seconds: int = 30
     thresholds: Thresholds = None  # type: ignore
+    calibration_data: str | None = None
     modules: Dict[str, ModuleConfig] | None = None
     fail_open: bool = True
     output: OutputConfig = None  # type: ignore
@@ -56,8 +77,33 @@ def load_config(path: str | None = None) -> Config:
         return Config(
             modules={
                 "text_extraction": ModuleConfig(enabled=True, weight=2.0, languages=["eng"]),
-                "hidden_text": ModuleConfig(enabled=True, weight=1.5, thresholds=[50, 100, 150, 200, 250]),
-                "frequency_analysis": ModuleConfig(enabled=True, weight=1.0, wavelet_enabled=True),
+                "hidden_text": ModuleConfig(
+                    enabled=True,
+                    weight=1.5,
+                    contrast_thresholds=[50, 100, 150, 200, 250],
+                    analyze_corners=True,
+                    analyze_borders=True,
+                    edge_density_threshold=0.15,
+                    edge_grid_size=8,
+                ),
+                "frequency_analysis": ModuleConfig(
+                    enabled=True,
+                    weight=1.0,
+                    fft_enabled=True,
+                    dct_enabled=True,
+                    wavelet_enabled=True,
+                    wavelet_threshold=0.5,
+                    wavelet_type="haar",
+                    wavelet_levels=2,
+                ),
+                "steganography": ModuleConfig(
+                    enabled=True,
+                    weight=1.0,
+                    lsb_analysis=True,
+                    chi_square_test=True,
+                    rs_analysis=True,
+                    spa_analysis=False,
+                ),
             }
         )
     with open(path, "r", encoding="utf-8") as f:
@@ -78,9 +124,29 @@ def load_config(path: str | None = None) -> Config:
             weight=cfg.get("weight", 1.0),
             languages=cfg.get("languages"),
             thresholds=cfg.get("thresholds"),
+            contrast_thresholds=cfg.get("contrast_thresholds"),
             wavelet_enabled=cfg.get("wavelet_enabled", True),
             pattern_path=cfg.get("pattern_path"),
             baseline_model=cfg.get("baseline_model"),
+            analyze_corners=cfg.get("analyze_corners", True),
+            analyze_borders=cfg.get("analyze_borders", True),
+            edge_density_threshold=cfg.get("edge_density_threshold", 0.15),
+            edge_grid_size=cfg.get("edge_grid_size", 4),
+            fft_enabled=cfg.get("fft_enabled", True),
+            dct_enabled=cfg.get("dct_enabled", True),
+            fft_threshold=cfg.get("fft_threshold", 0.7),
+            dct_threshold=cfg.get("dct_threshold", 0.6),
+            wavelet_threshold=cfg.get("wavelet_threshold", 0.5),
+            wavelet_type=cfg.get("wavelet_type", "haar"),
+            wavelet_levels=cfg.get("wavelet_levels", 1),
+            lsb_analysis=cfg.get("lsb_analysis", True),
+            chi_square_test=cfg.get("chi_square_test", True),
+            rs_analysis=cfg.get("rs_analysis", True),
+            spa_analysis=cfg.get("spa_analysis", False),
+            detect_qr=cfg.get("detect_qr", True),
+            detect_barcodes=cfg.get("detect_barcodes", True),
+            detect_screenshots=cfg.get("detect_screenshots", True),
+            analyze_decoded_content=cfg.get("analyze_decoded_content", True),
         )
     general = raw.get("general", {})
     output_cfg = raw.get("output", {})
@@ -89,6 +155,7 @@ def load_config(path: str | None = None) -> Config:
         target_resolution=general.get("target_resolution", 1920),
         timeout_seconds=general.get("timeout_seconds", 30),
         thresholds=thresholds,
+        calibration_data=scoring.get("calibration_data"),
         modules=modules_cfg,
         fail_open=general.get("fail_open", True),
         output=OutputConfig(

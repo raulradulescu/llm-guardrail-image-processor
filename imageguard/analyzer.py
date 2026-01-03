@@ -11,6 +11,7 @@ from pathlib import Path
 import time
 import logging
 import tempfile
+from datetime import datetime, timezone
 
 from .config import Config, load_config
 from .preprocess import ImageValidationError, load_image, normalize_resolution
@@ -19,9 +20,22 @@ from .hidden_text import analyze_hidden_text
 from .scoring import classify_tiered, weighted_average
 from .text_analysis import analyze_text
 from .patterns import load_patterns
+from .steganography import analyze_steganography
+from .structural import analyze_structural
+from .calibration import load_calibration, platt_confidence
 
 
-SUPPORTED_MODULES = {"text_extraction", "hidden_text", "frequency_analysis"}
+CANONICAL_MODULES = {"text_extraction", "hidden_text", "frequency_analysis", "steganography", "structural"}
+MODULE_ALIASES = {
+    "text": "text_extraction",
+    "hidden": "hidden_text",
+    "frequency": "frequency_analysis",
+    "stego": "steganography",
+    "steganography": "steganography",
+    "structural": "structural",
+    "struct": "structural",
+}
+SUPPORTED_INPUT_MODULES = sorted(CANONICAL_MODULES | set(MODULE_ALIASES.keys()) | {"all"})
 
 logger = logging.getLogger("imageguard")
 logging.basicConfig(level=logging.INFO)
@@ -38,7 +52,10 @@ class ImageGuard:
         config_path: Optional[str] = None,
     ):
         self.config = config or load_config(config_path)
-        self.modules = modules or [m for m, cfg in (self.config.modules or {}).items() if cfg.enabled]
+        if modules is None or "all" in modules:
+            self.modules = [m for m, cfg in (self.config.modules or {}).items() if cfg.enabled]
+        else:
+            self.modules = [MODULE_ALIASES.get(m, m) for m in modules]
         self.thresholds = self.config.thresholds
         self.threshold_override = threshold
         # Merge weights from config with overrides
@@ -62,13 +79,21 @@ class ImageGuard:
                         self.frequency_baseline = json.load(f)
                 except Exception:
                     self.frequency_baseline = None
+        # Load calibration data
+        self.calibration = load_calibration(self.config.calibration_data)
 
     def _validate_modules(self, modules: List[str]) -> None:
-        unknown = [m for m in modules if m not in SUPPORTED_MODULES]
+        unknown = [m for m in modules if m not in CANONICAL_MODULES]
         if unknown:
-            raise ValueError(f"Unsupported modules requested: {unknown}. Supported: {sorted(SUPPORTED_MODULES)}")
+            raise ValueError(f"Unsupported modules requested: {unknown}. Supported: {sorted(CANONICAL_MODULES)}")
 
-    def analyze(self, image_path: str, return_marked: bool = False):
+    def analyze(
+        self,
+        image_path: str,
+        return_marked: bool = False,
+        include_text: Optional[bool] = None,
+        max_text_length: Optional[int] = None,
+    ):
         path = Path(image_path)
         file_size = path.stat().st_size if path.exists() else 0
 
@@ -98,8 +123,8 @@ class ImageGuard:
         if "text_extraction" in self.modules:
             start = time.perf_counter()
             try:
-                include_text = self.config.output.include_extracted_text if self.config.output else True
-                max_len = self.config.output.max_text_length if self.config.output else 10000
+                include_text = include_text if include_text is not None else (self.config.output.include_extracted_text if self.config.output else True)
+                max_len = max_text_length if max_text_length is not None else (self.config.output.max_text_length if self.config.output else 10000)
                 text_result = analyze_text(
                     image,
                     pre.area,
@@ -120,11 +145,18 @@ class ImageGuard:
             else:
                 text_result["details"]["latency_ms"] = int(elapsed * 1000)
                 text_result["details"].setdefault("status", "ok")
+                text_result["latency_ms"] = text_result["details"]["latency_ms"]
+                text_result["status"] = text_result["details"]["status"]
             module_scores["text_extraction"] = text_result
 
         if "hidden_text" in self.modules:
             try:
-                thresholds = self.config.modules.get("hidden_text").thresholds if self.config.modules and self.config.modules.get("hidden_text") else None
+                hidden_cfg = self.config.modules.get("hidden_text") if self.config.modules else None
+                thresholds = None
+                if hidden_cfg:
+                    thresholds = hidden_cfg.contrast_thresholds or hidden_cfg.thresholds
+                edge_threshold = hidden_cfg.edge_density_threshold if hidden_cfg else 0.15
+                edge_grid = hidden_cfg.edge_grid_size if hidden_cfg else 4
                 start = time.perf_counter()
                 hidden_result = analyze_hidden_text(
                     image,
@@ -132,6 +164,8 @@ class ImageGuard:
                     languages=self.languages,
                     patterns=self.patterns,
                     thresholds=thresholds,
+                    edge_density_threshold=edge_threshold,
+                    edge_grid_size=edge_grid,
                 )
                 elapsed = time.perf_counter() - start
             except Exception as exc:  # pragma: no cover - defensive
@@ -146,19 +180,24 @@ class ImageGuard:
             else:
                 hidden_result["details"]["latency_ms"] = int(elapsed * 1000)
                 hidden_result["details"].setdefault("status", "ok")
+                hidden_result["latency_ms"] = hidden_result["details"]["latency_ms"]
+                hidden_result["status"] = hidden_result["details"]["status"]
             module_scores["hidden_text"] = hidden_result
 
         if "frequency_analysis" in self.modules:
             try:
-                wavelet_enabled = (
-                    self.config.modules.get("frequency_analysis").wavelet_enabled
-                    if self.config.modules and self.config.modules.get("frequency_analysis")
-                    else True
-                )
+                freq_cfg = self.config.modules.get("frequency_analysis") if self.config.modules else None
                 start = time.perf_counter()
                 freq_result = analyze_frequency(
                     image,
-                    enable_wavelet=wavelet_enabled,
+                    fft_enabled=freq_cfg.fft_enabled if freq_cfg else True,
+                    dct_enabled=freq_cfg.dct_enabled if freq_cfg else True,
+                    wavelet_enabled=freq_cfg.wavelet_enabled if freq_cfg else True,
+                    fft_threshold=freq_cfg.fft_threshold if freq_cfg else 0.7,
+                    dct_threshold=freq_cfg.dct_threshold if freq_cfg else 0.6,
+                    wavelet_threshold=freq_cfg.wavelet_threshold if freq_cfg else 0.5,
+                    wavelet_type=freq_cfg.wavelet_type if freq_cfg else "haar",
+                    wavelet_levels=freq_cfg.wavelet_levels if freq_cfg else 1,
                     baseline=self.frequency_baseline,
                 )
                 elapsed = time.perf_counter() - start
@@ -174,7 +213,66 @@ class ImageGuard:
             else:
                 freq_result["details"]["latency_ms"] = int(elapsed * 1000)
                 freq_result["details"].setdefault("status", "ok")
+                freq_result["latency_ms"] = freq_result["details"]["latency_ms"]
+                freq_result["status"] = freq_result["details"]["status"]
             module_scores["frequency_analysis"] = freq_result
+
+        if "steganography" in self.modules:
+            try:
+                stego_cfg = self.config.modules.get("steganography") if self.config.modules else None
+                start = time.perf_counter()
+                stego_result = analyze_steganography(
+                    image,
+                    lsb_enabled=stego_cfg.lsb_analysis if stego_cfg else True,
+                    chi_square_enabled=stego_cfg.chi_square_test if stego_cfg else True,
+                    rs_enabled=stego_cfg.rs_analysis if stego_cfg else True,
+                    spa_enabled=stego_cfg.spa_analysis if stego_cfg else False,
+                )
+                elapsed = time.perf_counter() - start
+            except Exception as exc:  # pragma: no cover - defensive
+                if not self.config.fail_open:
+                    return self._fail_closed_response(str(exc))
+                stego_result = {"score": None, "details": {"status": "error", "message": str(exc)}}
+                elapsed = 0
+            if elapsed > self.config.timeout_seconds:
+                if not self.config.fail_open:
+                    return self._fail_closed_response("steganography timeout")
+                stego_result = {"score": None, "details": {"status": "timeout", "message": "steganography exceeded timeout"}}
+            else:
+                stego_result["details"]["latency_ms"] = int(elapsed * 1000)
+                stego_result["details"].setdefault("status", "ok")
+                stego_result["latency_ms"] = stego_result["details"]["latency_ms"]
+                stego_result["status"] = stego_result["details"]["status"]
+            module_scores["steganography"] = stego_result
+
+        if "structural" in self.modules:
+            try:
+                struct_cfg = self.config.modules.get("structural") if self.config.modules else None
+                start = time.perf_counter()
+                struct_result = analyze_structural(
+                    image,
+                    enable_qr=struct_cfg.detect_qr if struct_cfg else True,
+                    enable_barcodes=struct_cfg.detect_barcodes if struct_cfg else True,
+                    enable_screenshots=struct_cfg.detect_screenshots if struct_cfg else True,
+                    analyze_decoded_content=struct_cfg.analyze_decoded_content if struct_cfg else True,
+                    patterns=self.patterns,
+                )
+                elapsed = time.perf_counter() - start
+            except Exception as exc:  # pragma: no cover - defensive
+                if not self.config.fail_open:
+                    return self._fail_closed_response(str(exc))
+                struct_result = {"score": None, "details": {"status": "error", "message": str(exc)}}
+                elapsed = 0
+            if elapsed > self.config.timeout_seconds:
+                if not self.config.fail_open:
+                    return self._fail_closed_response("structural timeout")
+                struct_result = {"score": None, "details": {"status": "timeout", "message": "structural exceeded timeout"}}
+            else:
+                struct_result["details"]["latency_ms"] = int(elapsed * 1000)
+                struct_result["details"].setdefault("status", "ok")
+                struct_result["latency_ms"] = struct_result["details"]["latency_ms"]
+                struct_result["status"] = struct_result["details"]["status"]
+            module_scores["structural"] = struct_result
 
         scores_for_weighting = {
             name: mod_result.get("score") for name, mod_result in module_scores.items() if mod_result is not None
@@ -208,9 +306,17 @@ class ImageGuard:
         valid_scores = [m["score"] for m in module_scores.values() if m.get("score") is not None]
         if valid_scores:
             score_variance = sum((s - risk_score) ** 2 for s in valid_scores) / len(valid_scores)
-            confidence = max(0.5, min(0.99, 1.0 - score_variance))
+            confidence_raw = max(0.5, min(0.99, 1.0 - score_variance))
         else:
-            confidence = 0.5
+            confidence_raw = 0.5
+
+        confidence = confidence_raw
+        confidence_method = "variance"
+        if self.calibration:
+            calibrated = platt_confidence(risk_score, self.calibration)
+            if calibrated is not None:
+                confidence = max(0.0, min(1.0, calibrated))
+                confidence_method = "platt_scaling"
 
         # Build response per PRD Section 7.3.2
         return {
@@ -222,6 +328,8 @@ class ImageGuard:
                 "classification": classification,
                 "risk_score": round(risk_score, 4),
                 "confidence": round(confidence, 4),
+                "confidence_raw": round(confidence_raw, 4),
+                "confidence_method": confidence_method,
                 "threshold_used": thresholds_used.get("dangerous", 0.6) if isinstance(thresholds_used, dict) else thresholds_used,
                 "thresholds": thresholds_used,
             },

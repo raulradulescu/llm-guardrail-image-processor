@@ -77,3 +77,30 @@ def write_corrupted_file(tmp_path: Path) -> Path:
     with open(path, "wb") as f:
         f.write(random.randbytes(64) if hasattr(random, "randbytes") else bytes(random.getrandbits(8) for _ in range(64)))
     return path
+
+
+def make_lsb_stego_image(tmp_path: Path, message: str = "secret", size: Tuple[int, int] = (256, 256)) -> Path:
+    """Create an image with a message embedded in LSBs."""
+    import numpy as np
+
+    base = Image.new("L", size, color=128)
+    arr = np.array(base)
+    bits = "".join(f"{ord(c):08b}" for c in message)
+    flat = arr.flatten()
+    for i, bit in enumerate(bits):
+        if i >= len(flat):
+            break
+        flat[i] = (flat[i] & 0xFE) | int(bit)
+    stego = flat.reshape(arr.shape)
+    out = Image.fromarray(stego).convert("RGB")
+    path = tmp_path / "stego.png"
+    out.save(path)
+    return path
+
+
+def make_plain_image(tmp_path: Path, size: Tuple[int, int] = (600, 400)) -> Path:
+    """Create a plain image for structural tests."""
+    image = Image.new("RGB", size, color=(240, 240, 240))
+    path = tmp_path / "plain.png"
+    image.save(path)
+    return path

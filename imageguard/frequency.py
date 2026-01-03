@@ -25,7 +25,7 @@ def pil_to_gray_f(image) -> np.ndarray:
     return arr.astype(np.float32) / 255.0
 
 
-def fft_anomaly(gray: np.ndarray) -> Dict:
+def fft_anomaly(gray: np.ndarray, threshold: float = 0.7) -> Dict:
     f = np.fft.fft2(gray)
     fshift = np.fft.fftshift(f)
     mag = np.abs(fshift)
@@ -40,11 +40,12 @@ def fft_anomaly(gray: np.ndarray) -> Dict:
     high_energy = mag[~mask].sum() + 1e-8
     ratio = high_energy / (low_energy + high_energy)
     # Map ratio to score with a soft threshold
-    score = max(0.0, min(1.0, (ratio - 0.15) / 0.35))
+    denom = max(1e-6, 1.0 - threshold)
+    score = max(0.0, min(1.0, (ratio - threshold) / denom))
     return {"score": score, "high_freq_ratio": ratio}
 
 
-def dct_anomaly(gray: np.ndarray) -> Dict:
+def dct_anomaly(gray: np.ndarray, threshold: float = 0.6) -> Dict:
     # Convert to 8x8 blocks like JPEG.
     h, w = gray.shape
     h8, w8 = h - (h % 8), w - (w % 8)
@@ -65,29 +66,43 @@ def dct_anomaly(gray: np.ndarray) -> Dict:
     lf_mean = np.mean(lf_energy) + 1e-6
     hf_mean = np.mean(hf_energy)
     ratio = hf_mean / (hf_mean + lf_mean)
-    score = max(0.0, min(1.0, (ratio - 0.2) / 0.3))
+    denom = max(1e-6, 1.0 - threshold)
+    score = max(0.0, min(1.0, (ratio - threshold) / denom))
     return {"score": score, "hf_lf_ratio": ratio}
 
 
-def wavelet_anomaly(gray: np.ndarray) -> Dict:
+def wavelet_anomaly(gray: np.ndarray, threshold: float = 0.5, wavelet_type: str = "haar", levels: int = 1) -> Dict:
     if pywt is None:
         return {"score": 0.0, "enabled": False}
-    coeffs2 = pywt.dwt2(gray, "haar")
-    cA, (cH, cV, cD) = coeffs2
-    detail_energy = sum(np.abs(c).mean() for c in (cH, cV, cD))
+    coeffs = pywt.wavedec2(gray, wavelet_type, level=levels)
+    cA = coeffs[0]
+    details = coeffs[1:]
+    detail_energy = sum(np.abs(c).mean() for level in details for c in level)
     approx_energy = np.abs(cA).mean() + 1e-6
     ratio = detail_energy / (detail_energy + approx_energy)
-    score = max(0.0, min(1.0, (ratio - 0.15) / 0.35))
-    return {"score": score, "enabled": True, "detail_ratio": ratio}
+    denom = max(1e-6, 1.0 - threshold)
+    score = max(0.0, min(1.0, (ratio - threshold) / denom))
+    return {"score": score, "enabled": True, "detail_ratio": ratio, "wavelet_type": wavelet_type, "levels": levels}
 
 
-def analyze_frequency(image, enable_wavelet: bool = True, baseline: Optional[Dict] = None) -> Dict:
+def analyze_frequency(
+    image,
+    fft_enabled: bool = True,
+    dct_enabled: bool = True,
+    wavelet_enabled: bool = True,
+    fft_threshold: float = 0.7,
+    dct_threshold: float = 0.6,
+    wavelet_threshold: float = 0.5,
+    wavelet_type: str = "haar",
+    wavelet_levels: int = 1,
+    baseline: Optional[Dict] = None,
+) -> Dict:
     gray = pil_to_gray_f(image)
 
-    fft_res = fft_anomaly(gray)
-    dct_res = dct_anomaly(gray)
-    if enable_wavelet:
-        wavelet_res = wavelet_anomaly(gray)
+    fft_res = fft_anomaly(gray, threshold=fft_threshold) if fft_enabled else {"score": 0.0, "disabled": True}
+    dct_res = dct_anomaly(gray, threshold=dct_threshold) if dct_enabled else {"score": 0.0, "disabled": True}
+    if wavelet_enabled:
+        wavelet_res = wavelet_anomaly(gray, threshold=wavelet_threshold, wavelet_type=wavelet_type, levels=wavelet_levels)
     else:
         wavelet_res = {"score": 0.0, "enabled": False}
 
@@ -106,8 +121,16 @@ def analyze_frequency(image, enable_wavelet: bool = True, baseline: Optional[Dic
     else:
         baseline_score = 0.0
 
-    scores = [fft_res["score"], dct_res["score"], wavelet_res.get("score", 0.0), baseline_score]
-    score = max(0.0, min(1.0, sum(scores) / len(scores)))
+    scores = []
+    if fft_enabled:
+        scores.append(fft_res["score"])
+    if dct_enabled:
+        scores.append(dct_res["score"])
+    if wavelet_enabled:
+        scores.append(wavelet_res.get("score", 0.0))
+    if baseline is not None:
+        scores.append(baseline_score)
+    score = max(0.0, min(1.0, sum(scores) / len(scores))) if scores else 0.0
 
     return {
         "score": score,

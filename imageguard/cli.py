@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 from typing import List
 
-from .analyzer import ImageGuard, SUPPORTED_MODULES
+from .analyzer import ImageGuard, SUPPORTED_INPUT_MODULES
 
 
 def parse_args(argv: List[str]) -> argparse.Namespace:
@@ -16,13 +16,17 @@ def parse_args(argv: List[str]) -> argparse.Namespace:
     parser.add_argument("image", help="Path to image file")
     parser.add_argument(
         "--modules",
-        default="text_extraction",
-        help=f"Comma-separated modules to run (supported: {','.join(sorted(SUPPORTED_MODULES))})",
+        default="all",
+        help=f"Comma-separated modules to run (supported: {','.join(SUPPORTED_INPUT_MODULES)})",
     )
-    parser.add_argument("--threshold", type=float, default=0.6, help="Risk threshold for classification")
+    parser.add_argument("--threshold", type=float, default=0.5, help="Risk threshold for classification")
     parser.add_argument("--languages", default="eng", help="Comma-separated OCR languages (default: eng)")
     parser.add_argument("--pretty", action="store_true", help="Pretty-print JSON")
     parser.add_argument("--mark", action="store_true", help="Return marked image (saved to temp path)")
+    parser.add_argument("--include-text", dest="include_text", action="store_true", help="Include extracted text")
+    parser.add_argument("--no-include-text", dest="include_text", action="store_false", help="Exclude extracted text")
+    parser.add_argument("--max-text-length", type=int, default=None, help="Maximum extracted text length")
+    parser.set_defaults(include_text=None)
     return parser.parse_args(argv)
 
 
@@ -33,7 +37,12 @@ def main(argv: List[str] | None = None) -> int:
 
     try:
         guard = ImageGuard(modules=modules, threshold=args.threshold, languages=languages)
-        result = guard.analyze(args.image, return_marked=args.mark)
+        result = guard.analyze(
+            args.image,
+            return_marked=args.mark,
+            include_text=args.include_text,
+            max_text_length=args.max_text_length,
+        )
     except Exception as exc:
         sys.stderr.write(f"Error: {exc}\n")
         return 1

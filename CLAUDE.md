@@ -15,9 +15,9 @@ LLM-free guardrail to detect prompt injection attacks in images before they reac
 | Phase 1: Text Extraction | ✅ Complete |
 | Phase 2: Hidden Text | ✅ Complete |
 | Phase 3: Frequency Analysis | ✅ Complete |
-| Phase 4: Steganography | 🔲 Next |
-| Phase 5: Structural | 🔲 Planned |
-| Phase 6: Optimization | 🔲 Planned |
+| Phase 4: Steganography | ✅ Complete |
+| Phase 5: Structural | ✅ Complete |
+| Phase 6: Optimization | ✅ Complete |
 
 ## Project Structure
 
@@ -44,13 +44,11 @@ imageguard/
 | `patterns.yaml` | Injection patterns (regex + keywords) |
 | `README.md` | User-facing documentation |
 
-## Next Up: Phase 4 (Steganography)
+## Next Up: Production Hardening
 
-Create `imageguard/steganography.py`:
-- LSB (Least Significant Bit) analysis
-- Chi-square statistical test
-- RS (Regular/Singular) analysis
-- **PRD Reference:** Section 5.4
+- Add API auth + rate limiting
+- Add metrics export (Prometheus)
+- Add richer marked image overlays
 
 ## Backlog: Phase 5 (Structural)
 

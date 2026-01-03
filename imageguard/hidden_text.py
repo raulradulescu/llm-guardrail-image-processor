@@ -70,6 +70,8 @@ def analyze_hidden_text(
     languages: Optional[List[str]] = None,
     patterns: Optional[List[Pattern]] = None,
     thresholds: Sequence[int] | None = None,
+    edge_density_threshold: float = 0.15,
+    edge_grid_size: int = 4,
 ) -> Dict:
     gray = pil_to_cv_gray(image)
     enhanced = apply_clahe(gray)
@@ -91,7 +93,7 @@ def analyze_hidden_text(
         score += 0.25
     score += 0.15 * len(matched)
 
-    flagged_cells = edge_density_flags(enhanced)
+    flagged_cells = edge_density_flags(enhanced, grid=edge_grid_size, threshold=edge_density_threshold)
     score += min(0.1, 0.02 * flagged_cells)
 
     score = min(1.0, score)

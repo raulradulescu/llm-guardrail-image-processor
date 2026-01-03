@@ -1,0 +1,65 @@
+{
+  "version": "1.0",
+  "created_at": "2025-01-15T10:30:00Z",
+  "description": "Confidence calibration parameters for ImageGuard scoring",
+  "method": "platt_scaling",
+  "training_info": {
+    "sample_count": 5000,
+    "positive_samples": 1200,
+    "negative_samples": 3800,
+    "training_date": "2025-01-10",
+    "validation_auc": 0.94
+  },
+  "platt_parameters": {
+    "A": -1.234,
+    "B": 0.567,
+    "description": "P(y=1|score) = 1 / (1 + exp(A * score + B))"
+  },
+  "threshold_calibration": {
+    "safe": {
+      "raw_threshold": 0.30,
+      "calibrated_threshold": 0.25,
+      "false_positive_rate": 0.02
+    },
+    "suspicious": {
+      "raw_threshold": 0.60,
+      "calibrated_threshold": 0.55,
+      "false_positive_rate": 0.08
+    },
+    "dangerous": {
+      "raw_threshold": 0.80,
+      "calibrated_threshold": 0.75,
+      "false_negative_rate": 0.03
+    }
+  },
+  "per_module_calibration": {
+    "text_extraction": {
+      "scale_factor": 1.0,
+      "offset": 0.0,
+      "notes": "Well-calibrated, no adjustment needed"
+    },
+    "hidden_text": {
+      "scale_factor": 0.9,
+      "offset": 0.05,
+      "notes": "Tends to over-score, reduced slightly"
+    },
+    "frequency_analysis": {
+      "scale_factor": 1.1,
+      "offset": -0.02,
+      "notes": "Slight under-score on anomalies"
+    },
+    "steganography": {
+      "scale_factor": 1.0,
+      "offset": 0.0,
+      "notes": "No adjustment"
+    },
+    "structural": {
+      "scale_factor": 1.0,
+      "offset": 0.0,
+      "notes": "No adjustment"
+    }
+  },
+  "metrics": {
+    "expected_calibration_error": 0.031
+  }
+}

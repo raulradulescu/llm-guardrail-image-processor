@@ -11,8 +11,11 @@ Attackers embed malicious instructions in images to bypass text-based security. 
 - **Text Extraction** - OCR + pattern matching for visible injection text
 - **Hidden Text Detection** - Finds low-contrast/camouflaged text
 - **Frequency Analysis** - Detects spectral anomalies (FFT, DCT, Wavelet)
+- **Steganography Detection** - LSB/chi-square/RS heuristics for hidden payloads
+- **Structural Analysis** - QR/barcode decode + screenshot/overlay heuristics
 - **REST API & CLI** - Easy integration
 - **Configurable** - Thresholds, weights, fail-open/closed policies
+- **Calibration + Ops** - Confidence calibration, Docker/K8s, load testing
 
 ## Quick Start
 
@@ -73,8 +76,18 @@ Edit `config.yaml` to adjust:
 | Text Extraction | ✅ Complete |
 | Hidden Text | ✅ Complete |
 | Frequency Analysis | ✅ Complete |
-| Steganography | 🔲 Planned |
-| Structural (QR/Screenshots) | 🔲 Planned |
+| Steganography | ✅ Complete |
+| Structural (QR/Screenshots) | ✅ Complete |
+| Integration & Optimization | ✅ Complete |
+
+## Phase 6 Artifacts
+
+- Calibration: `data/calibration.json` + `scripts/calibrate_confidence.py`
+- Weight tuning: `scripts/calibrate_weights.py`
+- Load testing: `scripts/load_test.py`
+- Docker: `Dockerfile`
+- Kubernetes: `k8s/deployment.yaml`, `k8s/service.yaml`
+- Security review checklist: `SECURITY_REVIEW.md`
 
 ## Documentation
 

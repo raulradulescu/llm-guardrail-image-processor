@@ -4,5 +4,7 @@ pytesseract
 numpy
 opencv-python
 pywavelets
+PyYAML
+pyzbar
 fastapi
 uvicorn[standard]
