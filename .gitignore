@@ -1,6 +1,10 @@
 # Virtual environments
 .venv/
 
+# Claude files
+.claude/
+CLAUDE.md
+
 # Python cache
 __pycache__/
 *.py[cod]
@@ -13,5 +17,3 @@ __pycache__/
 .DS_Store
 *.swp
 *.swo
-
-CLUADE.md
