@@ -28,10 +28,14 @@ modules:
     baseline_model: data/frequency_baseline.json
 
 scoring:
+  # Classification thresholds per PRD Section 3.7.4:
+  # - SAFE: score < 0.3
+  # - SUSPICIOUS: 0.3 <= score < 0.6
+  # - DANGEROUS: score >= 0.6
   thresholds:
     safe: 0.3
     suspicious: 0.6
-    dangerous: 0.8
+    dangerous: 0.6
 
 api:
   host: 0.0.0.0

@@ -1,8 +1,9 @@
-"""ImageGuard Analyzer for Phase 1."""
+"""ImageGuard Analyzer - Phases 1-3."""
 
 from __future__ import annotations
 
 import uuid
+from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
 import json
@@ -68,6 +69,9 @@ class ImageGuard:
             raise ValueError(f"Unsupported modules requested: {unknown}. Supported: {sorted(SUPPORTED_MODULES)}")
 
     def analyze(self, image_path: str, return_marked: bool = False):
+        path = Path(image_path)
+        file_size = path.stat().st_size if path.exists() else 0
+
         try:
             pre = load_image(image_path, max_bytes=self.config.max_image_size_mb * 1024 * 1024)
         except FileNotFoundError:
@@ -79,6 +83,15 @@ class ImageGuard:
 
         # Basic resizing to keep OCR reliable.
         image = normalize_resolution(pre.image, max_dimension=self.config.target_resolution)
+
+        # Build image_info per PRD Section 7.3.2
+        image_info = {
+            "filename": path.name,
+            "format": pre.original_format,
+            "dimensions": {"width": pre.width, "height": pre.height},
+            "size_bytes": file_size,
+            "normalized_dimensions": {"width": image.width, "height": image.height},
+        }
 
         module_scores: Dict[str, Dict] = {}
         start_overall = time.perf_counter()
@@ -191,25 +204,46 @@ class ImageGuard:
                 image.save(tmp.name, format="PNG")
                 marked_image_path = tmp.name
 
+        # Calculate confidence based on module agreement and score distribution
+        valid_scores = [m["score"] for m in module_scores.values() if m.get("score") is not None]
+        if valid_scores:
+            score_variance = sum((s - risk_score) ** 2 for s in valid_scores) / len(valid_scores)
+            confidence = max(0.5, min(0.99, 1.0 - score_variance))
+        else:
+            confidence = 0.5
+
+        # Build response per PRD Section 7.3.2
         return {
             "request_id": str(uuid.uuid4()),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "processing_time_ms": processing_time_ms,
+            "image_info": image_info,
             "result": {
-                "risk_score": risk_score,
                 "classification": classification,
-                "threshold_used": thresholds_used,
-                "processing_time_ms": processing_time_ms,
+                "risk_score": round(risk_score, 4),
+                "confidence": round(confidence, 4),
+                "threshold_used": thresholds_used.get("dangerous", 0.6) if isinstance(thresholds_used, dict) else thresholds_used,
+                "thresholds": thresholds_used,
             },
             "module_scores": module_scores,
             "marked_image_path": marked_image_path,
         }
 
     def _fail_closed_response(self, message: str):
+        """Return DANGEROUS classification when fail-closed policy is active."""
         return {
             "request_id": str(uuid.uuid4()),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "processing_time_ms": 0,
+            "image_info": None,
             "result": {
-                "risk_score": 1.0,
                 "classification": "DANGEROUS",
-                "threshold_used": self.thresholds.__dict__,
+                "risk_score": 1.0,
+                "confidence": 1.0,
+                "threshold_used": self.thresholds.dangerous,
+                "thresholds": self.thresholds.__dict__,
+                "note": "Fail-closed policy applied due to error",
             },
             "module_scores": {"error": {"score": 1.0, "details": {"status": "error", "message": message}}},
+            "marked_image_path": None,
         }

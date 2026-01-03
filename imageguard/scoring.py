@@ -24,11 +24,15 @@ def classify(risk_score: float, threshold: float = 0.6) -> str:
     return SAFE
 
 
-def classify_tiered(risk_score: float, safe: float = 0.3, suspicious: float = 0.6, dangerous: float = 0.8) -> str:
+def classify_tiered(risk_score: float, safe: float = 0.3, suspicious: float = 0.6, dangerous: float = 0.6) -> str:
+    """
+    Classify risk score into tiers per PRD Section 3.7.4:
+    - SAFE: score < safe (default 0.3)
+    - SUSPICIOUS: safe <= score < dangerous (0.3 to 0.6)
+    - DANGEROUS: score >= dangerous (default 0.6)
+    """
     if risk_score >= dangerous:
         return DANGEROUS
-    if risk_score >= suspicious:
-        return SUSPICIOUS
     if risk_score >= safe:
         return SUSPICIOUS
     return SAFE
