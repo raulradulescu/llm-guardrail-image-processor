@@ -15,15 +15,21 @@
 | - | Production Hardening | ✅ |
 | - | Enhanced Features | ✅ |
 
-**Tests:** 27 passing | **Thresholds:** SAFE <0.4, SUSPICIOUS 0.4-0.6, DANGEROUS ≥0.6
+**Tests:** 41 passing | **Thresholds:** SAFE <0.4, SUSPICIOUS 0.4-0.6, DANGEROUS ≥0.6
 
 ## Quick Start
 
 ```bash
-source .venv/bin/activate && pytest tests/ -v
+# Install & test
+pip install -e . && pytest tests/ -v
+
+# CLI usage
+imageguard image.png --pretty
+imageguard image.png | jq '.result.classification'
+
+# API server
 uvicorn imageguard.api:app --port 8080
 curl -X POST localhost:8080/api/v1/analyze -F "image=@test.png"
-curl localhost:8080/metrics
 ```
 
 ## Config Essentials
@@ -53,18 +59,23 @@ scoring:
 | Docs Update | Updated PRD (7.8 metrics, 12.3-12.4 auth/rate), README (security section), AGENT_PRD_PROMPT (status), SECURITY_REVIEW |
 | Final | Marked all phases ✅ in PRD architecture diagram and status tables |
 | Enhanced | Added: magic byte validation, ROT13/leetspeak detection, marked image overlays, multi-lang OCR, CI security scan |
+| OCR Fix | Enhanced OCR with multi-pass preprocessing, region extraction, 3x scaling for typographic injection detection |
+| CLI | Added `pyproject.toml`, `imageguard` command, `python -m imageguard` support |
+| Homoglyphs | Added Unicode homoglyph detection (Cyrillic, Greek, fullwidth, zero-width chars) |
 
 ## Enhanced Features (Latest)
 
 | Feature | File | Description |
 |---------|------|-------------|
+| CLI tool | `cli.py`, `pyproject.toml` | `imageguard image.png --pretty` |
+| Enhanced OCR | `text_analysis.py` | Multi-pass preprocessing, region extraction, 3x scaling |
+| Visual injection patterns | `patterns.yaml` | Detects "output X", "when asked", conditional injection |
 | Magic byte validation | `preprocess.py` | Validates image headers match file extension |
 | ROT13/Leetspeak detection | `text_analysis.py` | Decodes obfuscated text patterns |
+| Unicode homoglyph detection | `text_analysis.py` | Detects Cyrillic/Greek/fullwidth lookalikes |
 | Marked image overlays | `overlays.py` | Visual annotations on flagged regions |
 | Multi-language OCR | `config.yaml` | Supports eng, fra, deu, spa |
 | CI security scan | `.github/workflows/security.yml` | Safety, pip-audit, Bandit, CodeQL |
-| Enhanced OCR | `text_analysis.py` | Multi-pass preprocessing, region extraction, scaling |
-| Visual injection patterns | `patterns.yaml` | Detects "output X", "when asked", conditional injection |
 
 ## What's Left (Optional)
 
@@ -76,13 +87,14 @@ scoring:
 
 | File | Purpose |
 |------|---------|
+| `imageguard/cli.py` | CLI entry point |
 | `imageguard/api.py` | FastAPI + auth + rate limit + metrics |
+| `imageguard/text_analysis.py` | Enhanced OCR + ROT13/leetspeak/homoglyph detection |
 | `imageguard/preprocess.py` | Image loading + magic byte validation |
-| `imageguard/text_analysis.py` | OCR + ROT13/leetspeak detection |
 | `imageguard/overlays.py` | Visual overlay annotations |
+| `patterns.yaml` | Injection pattern definitions |
+| `pyproject.toml` | Package config + CLI entry point |
 | `config.yaml` | Runtime config |
-| `.github/workflows/security.yml` | CI security scanning |
-| `ImageGuard_PRD_v0.2.md` | Full spec |
 
 ---
 *Authors: Raul & Mark • Jan 2026*

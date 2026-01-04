@@ -6,14 +6,14 @@
 - Date: January 2026
 
 ## Findings Summary
-- Open findings: 3
-- Resolved findings: 12
-- Notes: Core security features implemented. Remaining items are recommended enhancements.
+- Open findings: 1
+- Resolved findings: 14
+- Notes: Core security features implemented. Obfuscation detection (ROT13, leetspeak, homoglyphs) added.
 
 ## Checklist
 
 ### Input Handling
-- [ ] Validate magic bytes for image types
+- [x] Validate magic bytes for image types
 - [x] Enforce max file size and dimensions
 - [x] Reject animated images
 - [x] Enforce file count limits on batch requests (max 10)
@@ -21,7 +21,7 @@
 ### Output Safety
 - [x] Extracted text truncation supported
 - [x] Optional text suppression supported
-- [ ] Marked image redaction and overlays reviewed
+- [x] Marked image redaction and overlays reviewed
 
 ### Service Hardening
 - [x] Rate limiting enabled (configurable via `api.rate_limit_*`)
@@ -31,7 +31,7 @@
 
 ### Dependencies
 - [x] Pin core dependencies in `requirements.txt`
-- [ ] Vulnerability scan (pip/audit) completed
+- [x] Vulnerability scan (pip-audit, safety) in CI
 - [ ] OS package updates (container) verified
 
 ### Observability
@@ -77,6 +77,33 @@ Access at `/metrics` or `/api/v1/metrics`. Metrics include:
 ## Follow-up Actions
 1. ~~Add API key middleware for FastAPI.~~ ✅ Done
 2. ~~Add basic rate limiting.~~ ✅ Done
-3. Add dependency vulnerability scan to CI.
-4. Add magic byte validation for image uploads.
-5. Review marked image overlay implementation.
+3. ~~Add dependency vulnerability scan to CI.~~ ✅ Done (`.github/workflows/security.yml`)
+4. ~~Add magic byte validation for image uploads.~~ ✅ Done (`preprocess.py`)
+5. ~~Review marked image overlay implementation.~~ ✅ Done (`overlays.py`)
+6. ~~Add obfuscation detection (ROT13, leetspeak).~~ ✅ Done (`text_analysis.py`)
+7. ~~Add Unicode homoglyph detection.~~ ✅ Done (`text_analysis.py`)
+
+## Obfuscation Detection
+
+ImageGuard detects the following text obfuscation techniques:
+
+### ROT13 Encoding
+Detects text encoded with ROT13 cipher when decoded text contains injection keywords.
+- Example: `vtaber flfgrz cebzcg` → `ignore system prompt`
+
+### Leetspeak
+Decodes number/symbol substitutions for letters.
+- Example: `1gn0r3 4ll 1n5truct10n5` → `ignore all instructions`
+
+### Unicode Homoglyphs
+Detects lookalike characters from other scripts:
+
+| Type | Example | Risk |
+|------|---------|------|
+| Cyrillic | `іgnore` (U+0456) | High - visually identical |
+| Greek | `αdmin` (U+03B1) | High - visually similar |
+| Fullwidth | `ｉｇｎｏｒｅ` | Medium - spacing differs |
+| Zero-width | `ig​nore` (U+200B) | High - invisible insertion |
+| Mixed scripts | Cyrillic + Latin | Very High - intentional evasion |
+
+All detected homoglyphs are normalized to ASCII before pattern matching, ensuring injection attempts using confusable characters are caught.

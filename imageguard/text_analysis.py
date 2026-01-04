@@ -27,6 +27,124 @@ LEETSPEAK_MAP = {
     "z": ["2"],
 }
 
+# Unicode homoglyph mappings (confusable char -> ASCII equivalent)
+# These are characters from other scripts that look like Latin letters
+HOMOGLYPH_MAP = {
+    # Cyrillic lookalikes
+    "\u0430": "a",  # Cyrillic а
+    "\u0435": "e",  # Cyrillic е
+    "\u043e": "o",  # Cyrillic о
+    "\u0440": "p",  # Cyrillic р
+    "\u0441": "c",  # Cyrillic с
+    "\u0443": "y",  # Cyrillic у (looks like y)
+    "\u0445": "x",  # Cyrillic х
+    "\u0456": "i",  # Cyrillic і (Ukrainian)
+    "\u0458": "j",  # Cyrillic ј (Serbian)
+    "\u04bb": "h",  # Cyrillic һ
+    "\u0410": "A",  # Cyrillic А
+    "\u0412": "B",  # Cyrillic В
+    "\u0415": "E",  # Cyrillic Е
+    "\u041a": "K",  # Cyrillic К
+    "\u041c": "M",  # Cyrillic М
+    "\u041d": "H",  # Cyrillic Н
+    "\u041e": "O",  # Cyrillic О
+    "\u0420": "P",  # Cyrillic Р
+    "\u0421": "C",  # Cyrillic С
+    "\u0422": "T",  # Cyrillic Т
+    "\u0425": "X",  # Cyrillic Х
+    "\u0427": "4",  # Cyrillic Ч (looks like 4)
+    # Greek lookalikes
+    "\u03b1": "a",  # Greek α (alpha)
+    "\u03b5": "e",  # Greek ε (epsilon) - somewhat similar
+    "\u03b9": "i",  # Greek ι (iota)
+    "\u03bf": "o",  # Greek ο (omicron)
+    "\u03c1": "p",  # Greek ρ (rho)
+    "\u03c5": "u",  # Greek υ (upsilon)
+    "\u03c7": "x",  # Greek χ (chi)
+    "\u0391": "A",  # Greek Α (Alpha)
+    "\u0392": "B",  # Greek Β (Beta)
+    "\u0395": "E",  # Greek Ε (Epsilon)
+    "\u0397": "H",  # Greek Η (Eta)
+    "\u0399": "I",  # Greek Ι (Iota)
+    "\u039a": "K",  # Greek Κ (Kappa)
+    "\u039c": "M",  # Greek Μ (Mu)
+    "\u039d": "N",  # Greek Ν (Nu)
+    "\u039f": "O",  # Greek Ο (Omicron)
+    "\u03a1": "P",  # Greek Ρ (Rho)
+    "\u03a4": "T",  # Greek Τ (Tau)
+    "\u03a7": "X",  # Greek Χ (Chi)
+    "\u03a5": "Y",  # Greek Υ (Upsilon)
+    "\u0396": "Z",  # Greek Ζ (Zeta)
+    # Mathematical/special lookalikes
+    "\u2010": "-",  # Hyphen
+    "\u2011": "-",  # Non-breaking hyphen
+    "\u2012": "-",  # Figure dash
+    "\u2013": "-",  # En dash
+    "\u2014": "-",  # Em dash
+    "\u2018": "'",  # Left single quote
+    "\u2019": "'",  # Right single quote
+    "\u201c": '"',  # Left double quote
+    "\u201d": '"',  # Right double quote
+    "\u2032": "'",  # Prime
+    "\u2033": '"',  # Double prime
+    "\u00a0": " ",  # Non-breaking space
+    "\u2000": " ",  # En quad
+    "\u2001": " ",  # Em quad
+    "\u2002": " ",  # En space
+    "\u2003": " ",  # Em space
+    "\u2004": " ",  # Three-per-em space
+    "\u2005": " ",  # Four-per-em space
+    "\u2006": " ",  # Six-per-em space
+    "\u2007": " ",  # Figure space
+    "\u2008": " ",  # Punctuation space
+    "\u2009": " ",  # Thin space
+    "\u200a": " ",  # Hair space
+    "\u200b": "",   # Zero-width space (invisible)
+    "\u200c": "",   # Zero-width non-joiner
+    "\u200d": "",   # Zero-width joiner
+    "\ufeff": "",   # Zero-width no-break space (BOM)
+    # Fullwidth Latin (often used in CJK contexts)
+    "\uff41": "a",  # Fullwidth a
+    "\uff42": "b",  # Fullwidth b
+    "\uff43": "c",  # Fullwidth c
+    "\uff44": "d",  # Fullwidth d
+    "\uff45": "e",  # Fullwidth e
+    "\uff46": "f",  # Fullwidth f
+    "\uff47": "g",  # Fullwidth g
+    "\uff48": "h",  # Fullwidth h
+    "\uff49": "i",  # Fullwidth i
+    "\uff4a": "j",  # Fullwidth j
+    "\uff4b": "k",  # Fullwidth k
+    "\uff4c": "l",  # Fullwidth l
+    "\uff4d": "m",  # Fullwidth m
+    "\uff4e": "n",  # Fullwidth n
+    "\uff4f": "o",  # Fullwidth o
+    "\uff50": "p",  # Fullwidth p
+    "\uff51": "q",  # Fullwidth q
+    "\uff52": "r",  # Fullwidth r
+    "\uff53": "s",  # Fullwidth s
+    "\uff54": "t",  # Fullwidth t
+    "\uff55": "u",  # Fullwidth u
+    "\uff56": "v",  # Fullwidth v
+    "\uff57": "w",  # Fullwidth w
+    "\uff58": "x",  # Fullwidth x
+    "\uff59": "y",  # Fullwidth y
+    "\uff5a": "z",  # Fullwidth z
+    # Additional confusables
+    "\u0131": "i",  # Dotless i (Turkish)
+    "\u0237": "j",  # Dotless j
+    "\u1d00": "a",  # Small capital A
+    "\u1d04": "c",  # Small capital C
+    "\u1d07": "e",  # Small capital E
+    "\u1d0f": "o",  # Small capital O
+    "\u1d1c": "u",  # Small capital U
+    "\u2170": "i",  # Roman numeral one
+    "\u2171": "ii", # Roman numeral two
+    "\u2174": "v",  # Roman numeral five
+    "\u2179": "x",  # Roman numeral ten
+    "\u217a": "xi", # Roman numeral eleven
+}
+
 # Reverse mapping for decoding (leetspeak char -> original)
 LEETSPEAK_REVERSE = {}
 for char, leets in LEETSPEAK_MAP.items():
@@ -55,36 +173,197 @@ def decode_leetspeak(text: str) -> str:
     return result
 
 
+def normalize_homoglyphs(text: str) -> str:
+    """Convert homoglyph characters to their ASCII equivalents.
+
+    This normalizes text like "іgnore" (Cyrillic і) to "ignore" (Latin i).
+    """
+    result = []
+    for char in text:
+        if char in HOMOGLYPH_MAP:
+            result.append(HOMOGLYPH_MAP[char])
+        else:
+            result.append(char)
+    return "".join(result)
+
+
+def detect_script(char: str) -> str:
+    """Detect the Unicode script of a character."""
+    code = ord(char)
+
+    # Basic Latin
+    if 0x0000 <= code <= 0x007F:
+        return "latin"
+    # Latin Extended
+    if 0x0080 <= code <= 0x024F:
+        return "latin"
+    # Cyrillic
+    if 0x0400 <= code <= 0x04FF:
+        return "cyrillic"
+    # Greek
+    if 0x0370 <= code <= 0x03FF:
+        return "greek"
+    # Fullwidth Latin
+    if 0xFF00 <= code <= 0xFF5E:
+        return "fullwidth"
+    # Common (numbers, punctuation, etc.)
+    if char.isdigit() or char in ' \t\n.,!?;:\'"()-_[]{}':
+        return "common"
+
+    return "other"
+
+
+def detect_homoglyphs(text: str) -> Dict[str, any]:
+    """Detect Unicode homoglyph usage and mixed scripts.
+
+    Returns dict with:
+        - has_homoglyphs: bool - True if homoglyphs detected
+        - homoglyph_count: int - Number of homoglyph characters found
+        - homoglyphs_found: List[Dict] - Details of each homoglyph
+        - normalized_text: str - Text with homoglyphs replaced
+        - mixed_scripts: bool - True if text mixes multiple scripts
+        - scripts_found: List[str] - List of detected scripts
+        - homoglyph_score: float - Risk score (0.0 - 1.0)
+    """
+    result = {
+        "has_homoglyphs": False,
+        "homoglyph_count": 0,
+        "homoglyphs_found": [],
+        "normalized_text": "",
+        "mixed_scripts": False,
+        "scripts_found": [],
+        "homoglyph_score": 0.0,
+    }
+
+    if not text:
+        return result
+
+    # Detect homoglyphs
+    homoglyphs_found = []
+    normalized_chars = []
+    scripts_seen = set()
+
+    for i, char in enumerate(text):
+        if char in HOMOGLYPH_MAP:
+            normalized_char = HOMOGLYPH_MAP[char]
+            homoglyphs_found.append({
+                "position": i,
+                "original": char,
+                "original_codepoint": f"U+{ord(char):04X}",
+                "normalized": normalized_char,
+                "script": detect_script(char),
+            })
+            normalized_chars.append(normalized_char)
+        else:
+            normalized_chars.append(char)
+
+        # Track scripts for alphabetic characters
+        if char.isalpha():
+            script = detect_script(char)
+            if script not in ("common", "other"):
+                scripts_seen.add(script)
+
+    normalized_text = "".join(normalized_chars)
+
+    # Calculate results
+    homoglyph_count = len(homoglyphs_found)
+    has_homoglyphs = homoglyph_count > 0
+    scripts_list = sorted(scripts_seen)
+    mixed_scripts = len([s for s in scripts_list if s != "common"]) > 1
+
+    # Calculate risk score
+    # Higher score for:
+    # - More homoglyphs
+    # - Mixed scripts (very suspicious)
+    # - Homoglyphs in context of injection keywords
+    score = 0.0
+
+    if has_homoglyphs:
+        # Base score from homoglyph density
+        alpha_count = sum(1 for c in text if c.isalpha())
+        if alpha_count > 0:
+            density = homoglyph_count / alpha_count
+            score += min(0.4, density * 2)  # Cap at 0.4 from density
+
+        # Bonus for mixed scripts (very suspicious)
+        if mixed_scripts:
+            score += 0.3
+
+        # Check if normalized text contains injection keywords
+        injection_keywords = [
+            "ignore", "system", "prompt", "instruction", "bypass",
+            "forget", "disregard", "pretend", "role", "jailbreak",
+            "admin", "override", "output", "execute"
+        ]
+        normalized_lower = normalized_text.lower()
+        keyword_matches = sum(1 for kw in injection_keywords if kw in normalized_lower)
+        if keyword_matches > 0:
+            score += min(0.3, keyword_matches * 0.1)
+
+    result["has_homoglyphs"] = has_homoglyphs
+    result["homoglyph_count"] = homoglyph_count
+    result["homoglyphs_found"] = homoglyphs_found
+    result["normalized_text"] = normalized_text
+    result["mixed_scripts"] = mixed_scripts
+    result["scripts_found"] = scripts_list
+    result["homoglyph_score"] = min(1.0, score)
+
+    return result
+
+
 def detect_obfuscated_text(text: str) -> Dict[str, any]:
-    """Detect and decode ROT13 and leetspeak obfuscation.
+    """Detect and decode ROT13, leetspeak, and homoglyph obfuscation.
 
     Returns dict with:
         - has_obfuscation: bool
         - rot13_decoded: str (if ROT13 patterns found)
         - leetspeak_decoded: str (if leetspeak patterns found)
+        - homoglyph_normalized: str (if homoglyphs found)
+        - homoglyph_details: dict (detailed homoglyph info)
         - obfuscation_score: float (0.0 - 1.0)
     """
     result = {
         "has_obfuscation": False,
         "rot13_decoded": None,
         "leetspeak_decoded": None,
+        "homoglyph_normalized": None,
+        "homoglyph_details": None,
         "obfuscation_score": 0.0,
     }
 
+    # Check for homoglyphs first
+    homoglyph_result = detect_homoglyphs(text)
+    if homoglyph_result["has_homoglyphs"]:
+        result["homoglyph_normalized"] = homoglyph_result["normalized_text"]
+        result["homoglyph_details"] = {
+            "count": homoglyph_result["homoglyph_count"],
+            "mixed_scripts": homoglyph_result["mixed_scripts"],
+            "scripts_found": homoglyph_result["scripts_found"],
+            "characters": homoglyph_result["homoglyphs_found"][:10],  # Limit to first 10
+        }
+        result["has_obfuscation"] = True
+        result["obfuscation_score"] = max(
+            result["obfuscation_score"],
+            homoglyph_result["homoglyph_score"]
+        )
+
+    # Use normalized text for further analysis if homoglyphs were found
+    analysis_text = homoglyph_result["normalized_text"] if homoglyph_result["has_homoglyphs"] else text
+
     # Check for leetspeak patterns (numbers/symbols mixed with letters)
     leetspeak_pattern = r"[a-zA-Z]*[0-9@$#!|<>{}^]+[a-zA-Z]*"
-    leetspeak_matches = re.findall(leetspeak_pattern, text)
+    leetspeak_matches = re.findall(leetspeak_pattern, analysis_text)
 
     # Count leetspeak-like substitutions
-    leet_char_count = sum(1 for c in text if c in "0134567@$#!|<>{}^")
-    alpha_count = sum(1 for c in text if c.isalpha())
+    leet_char_count = sum(1 for c in analysis_text if c in "0134567@$#!|<>{}^")
+    alpha_count = sum(1 for c in analysis_text if c.isalpha())
     total_relevant = leet_char_count + alpha_count
 
     if total_relevant > 0:
         leet_ratio = leet_char_count / total_relevant
         if leet_ratio > 0.1 and leetspeak_matches:  # At least 10% leet chars
-            decoded = decode_leetspeak(text)
-            if decoded != text.lower():
+            decoded = decode_leetspeak(analysis_text)
+            if decoded != analysis_text.lower():
                 result["leetspeak_decoded"] = decoded
                 result["has_obfuscation"] = True
                 result["obfuscation_score"] = max(result["obfuscation_score"], min(1.0, leet_ratio * 2))
@@ -92,13 +371,13 @@ def detect_obfuscated_text(text: str) -> Dict[str, any]:
     # Check for ROT13 by looking for common words after decoding
     # Only apply to text that looks like it could be ROT13 (mostly alphabetic)
     if alpha_count > 10:
-        rot13_decoded = decode_rot13(text)
+        rot13_decoded = decode_rot13(analysis_text)
         # Check if decoded text contains common injection keywords
         injection_keywords = [
             "ignore", "system", "prompt", "instruction", "bypass",
             "forget", "disregard", "pretend", "role", "jailbreak"
         ]
-        original_lower = text.lower()
+        original_lower = analysis_text.lower()
         decoded_lower = rot13_decoded.lower()
 
         # Count keywords in original vs decoded
@@ -388,13 +667,15 @@ def analyze_text(
     if detect_obfuscation and extracted_text.strip():
         obfuscation_result = detect_obfuscated_text(cleaned_text)
 
-        # If obfuscation detected, also check decoded text for patterns
+        # If obfuscation detected, also check decoded/normalized text for patterns
         if obfuscation_result.get("has_obfuscation"):
             decoded_texts = []
             if obfuscation_result.get("rot13_decoded"):
                 decoded_texts.append(obfuscation_result["rot13_decoded"])
             if obfuscation_result.get("leetspeak_decoded"):
                 decoded_texts.append(obfuscation_result["leetspeak_decoded"])
+            if obfuscation_result.get("homoglyph_normalized"):
+                decoded_texts.append(obfuscation_result["homoglyph_normalized"])
 
             for decoded in decoded_texts:
                 matches = find_matches(decoded, patterns=patterns)
@@ -438,6 +719,8 @@ def analyze_text(
             "detected": True,
             "rot13_decoded": obfuscation_result.get("rot13_decoded"),
             "leetspeak_decoded": obfuscation_result.get("leetspeak_decoded"),
+            "homoglyph_normalized": obfuscation_result.get("homoglyph_normalized"),
+            "homoglyph_details": obfuscation_result.get("homoglyph_details"),
             "obfuscation_score": obfuscation_result.get("obfuscation_score", 0.0),
         }
 

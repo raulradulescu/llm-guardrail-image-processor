@@ -74,33 +74,44 @@ After each significant implementation:
 [x] Phase 7: Ensemble & Integration
 [x] Phase 8: API & CLI
 [x] Production Hardening: API Auth, Rate Limiting, Metrics
+[x] Enhanced Features: Multi-lang OCR, Magic Bytes, ROT13/Leetspeak
+[x] Unicode Homoglyph Detection: Cyrillic, Greek, Fullwidth, Zero-width
 ```
 
 ### Agent Working Notes
 ```
-<!-- AGENT: Update this section with observations, blockers, decisions made -->
-
-[DATE] - [NOTE]
-Example: 2025-12-17 - Started project setup, chose pytest over unittest for better fixtures
+[2026-01-04] - Added Unicode homoglyph detection with 100+ character mappings
+[2026-01-04] - Supports Cyrillic, Greek, fullwidth Latin, and zero-width characters
+[2026-01-04] - Mixed-script detection flags Cyrillic + Latin combinations
+[2026-01-04] - Homoglyphs normalized before pattern matching
+[2026-01-03] - Added ROT13 and leetspeak detection
+[2026-01-03] - Added magic byte validation for image format verification
+[2026-01-03] - Enhanced OCR with multi-pass preprocessing for typographic injection
+[2026-01-03] - Added CLI tool: `imageguard image.png --pretty`
 
 BLOCKERS:
 - None currently
 
 DECISIONS MADE:
-- (record architectural decisions here)
+- Homoglyph detection integrated into detect_obfuscated_text() for unified API
+- Zero-width characters mapped to empty string (removed)
+- Mixed-script detection triggers higher risk score (+0.3)
+- Pattern matching uses normalized text after homoglyph conversion
 
 LEARNINGS:
-- (record things discovered during implementation)
+- Cyrillic а/е/о/і are most common homoglyph attacks (visually identical)
+- Zero-width space (U+200B) can be inserted to break keyword detection
+- Fullwidth characters have different spacing, less convincing visually
 
 TECHNICAL DEBT:
-- (record shortcuts taken that need revisiting)
+- None currently
 ```
 
 ### Test Status Tracker
 ```
 Last Full Test Run: January 2026
-Total Tests: 12
-Passed: 12
+Total Tests: 41
+Passed: 41
 Failed: 0
 Skipped: 0
 
@@ -114,6 +125,8 @@ Regression Status:
 - Phase 6: N/A (integrated into Phase 5)
 - Phase 7: [x] Passing (integrated)
 - Phase 8: [x] Passing (API/CLI functional)
+- New Features: [x] Passing (15 tests - magic bytes, ROT13, leetspeak, overlays)
+- Homoglyphs: [x] Passing (14 tests - Cyrillic, Greek, fullwidth, zero-width)
 ```
 
 ---

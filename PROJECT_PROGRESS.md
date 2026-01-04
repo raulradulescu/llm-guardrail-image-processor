@@ -1,4 +1,4 @@
-# ImageGuard Progress Report (Phases 1–3)
+# ImageGuard Progress Report (All Phases Complete)
 1. Initial PRD drafted for Phases 1–3 scope (preprocessing, text, hidden text, frequency).
 2. Added phase-specific test plans outlining cases and fixtures for each module.
 3. Introduced pytest test suites for Phase 1 visible text detection.
@@ -99,4 +99,50 @@ id heuristic for locating hidden text regions.
 96. Maintained compatibility with earlier single-threshold tests.
 97. Kept doc PRD and plans aligned with implemented scopes (Phases 1–3 only).
 98. Ensured ASCII-only edits and repo cleanliness with gitignore updates.
-99. Current status: all implemented modules passing tests; further work needed for marked overlays, richer metrics, and production hardening.
+99. Phases 1-3 complete with all tests passing.
+
+## Phases 4-6 & Production Hardening
+
+100. Implemented Phase 4 steganography detection (LSB, chi-square, RS analysis).
+101. Implemented Phase 5 structural analysis (QR/barcode decode, screenshot detection).
+102. Implemented Phase 6 integration and optimization (calibration, weight tuning).
+103. Added API key authentication with `X-API-Key` header and env var support.
+104. Added sliding window rate limiting (configurable requests/window).
+105. Added Prometheus metrics endpoint at `/metrics`.
+106. Added Docker and Kubernetes deployment manifests.
+107. Created security review checklist (`SECURITY_REVIEW.md`).
+
+## Enhanced Features (January 2026)
+
+108. Added multi-language OCR support (eng, fra, deu, spa).
+109. Added magic byte validation for image format verification.
+110. Added ROT13 encoding detection and decoding.
+111. Added leetspeak detection and decoding.
+112. Added marked image overlays with severity-based coloring.
+113. Added CI security scanning workflow (safety, pip-audit, Bandit, CodeQL).
+114. Enhanced OCR with multi-pass preprocessing for typographic injection detection.
+115. Added region extraction (top, bottom, corners) for overlay text detection.
+116. Added 3x image scaling for improved small text OCR.
+117. Added visual injection patterns (output_manipulation, conditional_injection, sorry_injection).
+118. Added `pyproject.toml` with CLI entry point (`imageguard` command).
+119. Added `python -m imageguard` support via `__main__.py`.
+120. Fixed JSON serialization for numpy types in CLI output.
+121. Updated thresholds: SAFE <0.4, SUSPICIOUS 0.4-0.6, DANGEROUS ≥0.6.
+
+## Unicode Homoglyph Detection (January 2026)
+
+122. Added 100+ Unicode homoglyph character mappings (Cyrillic, Greek, fullwidth, zero-width).
+123. Implemented `normalize_homoglyphs()` function for ASCII conversion.
+124. Implemented `detect_script()` function for Latin/Cyrillic/Greek identification.
+125. Implemented `detect_homoglyphs()` function with full scoring and mixed-script detection.
+126. Integrated homoglyph detection into `detect_obfuscated_text()` pipeline.
+127. Added homoglyph-normalized text to pattern matching.
+128. Added 14 new tests for homoglyph detection (41 total tests passing).
+129. Updated all documentation to reflect homoglyph capabilities.
+
+## Current Status
+
+- **Tests:** 41 passing
+- **Phases:** All 6 complete + production hardening + enhanced features
+- **Obfuscation Detection:** ROT13, leetspeak, Unicode homoglyphs
+- **Remaining (Optional):** GPU acceleration, WebSocket API, video analysis

@@ -4131,13 +4131,13 @@ groups:
 
 | Enhancement | Priority | Complexity |
 |-------------|----------|------------|
-| Additional OCR languages (fra, deu, spa) | High | Low |
+| ~~Additional OCR languages (fra, deu, spa)~~ | ✅ Complete | Low |
 | GPU acceleration for frequency analysis | Medium | Medium |
 | WebSocket API for streaming | Medium | Medium |
 | ~~Prometheus metrics integration~~ | ✅ Complete | Low |
-| ROT13 detection | Low | Low |
-| Leetspeak detection | Low | Medium |
-| Unicode homoglyph detection | Medium | High |
+| ~~ROT13 detection~~ | ✅ Complete | Low |
+| ~~Leetspeak detection~~ | ✅ Complete | Medium |
+| ~~Unicode homoglyph detection~~ | ✅ Complete | High |
 
 ### 14.2 Medium-term (6-12 months)
 
