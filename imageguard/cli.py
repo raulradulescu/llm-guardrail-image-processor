@@ -8,7 +8,21 @@ import sys
 from pathlib import Path
 from typing import List
 
+import numpy as np
+
 from .analyzer import ImageGuard, SUPPORTED_INPUT_MODULES
+
+
+class NumpyEncoder(json.JSONEncoder):
+    """JSON encoder that handles numpy types."""
+    def default(self, obj):
+        if isinstance(obj, np.floating):
+            return float(obj)
+        if isinstance(obj, np.integer):
+            return int(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return super().default(obj)
 
 
 def parse_args(argv: List[str]) -> argparse.Namespace:
@@ -48,9 +62,9 @@ def main(argv: List[str] | None = None) -> int:
         return 1
 
     if args.pretty:
-        print(json.dumps(result, indent=2))
+        print(json.dumps(result, indent=2, cls=NumpyEncoder))
     else:
-        print(json.dumps(result))
+        print(json.dumps(result, cls=NumpyEncoder))
     return 0
 
 

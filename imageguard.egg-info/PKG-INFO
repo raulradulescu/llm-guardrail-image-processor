@@ -1,3 +1,28 @@
+Metadata-Version: 2.4
+Name: imageguard
+Version: 0.2.0
+Summary: LLM-free guardrail detecting prompt injection in images via classical CV
+Author: Raul & Mark
+License: Apache-2.0
+Project-URL: Repository, https://github.com/your-repo/imageguard
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: pillow>=10.0.0
+Requires-Dist: pytesseract>=0.3.10
+Requires-Dist: numpy>=1.24.0
+Requires-Dist: pywavelets>=1.4.0
+Requires-Dist: pyzbar>=0.1.9
+Requires-Dist: fastapi>=0.100.0
+Requires-Dist: uvicorn>=0.23.0
+Requires-Dist: python-multipart>=0.0.6
+Requires-Dist: pyyaml>=6.0
+Requires-Dist: prometheus-client>=0.17.0
+Provides-Extra: dev
+Requires-Dist: pytest>=7.0.0; extra == "dev"
+Requires-Dist: pytest-cov>=4.0.0; extra == "dev"
+Dynamic: license-file
+
 # ImageGuard
 
 Lightweight guardrail to detect prompt injection attacks hidden in images before they reach multimodal LLMs.
@@ -31,42 +56,9 @@ pip install -r requirements.txt
 # System dependency (Ubuntu/Debian)
 sudo apt install tesseract-ocr
 
-# Install ImageGuard
-pip install -e .
-
 # Analyze an image
-imageguard suspicious_image.png --pretty
+python -m imageguard.cli analyze suspicious_image.png
 ```
-
-## CLI Usage
-
-```bash
-# Basic analysis
-imageguard image.png
-
-# Pretty JSON output
-imageguard image.png --pretty
-
-# Quick classification check
-imageguard image.png | jq '.result.classification'
-
-# Specific modules only
-imageguard image.png --modules text,hidden
-
-# Alternative methods
-python -m imageguard image.png
-./imageguard-cli image.png
-```
-
-**CLI Options:**
-| Option | Description |
-|--------|-------------|
-| `--pretty` | Pretty-print JSON output |
-| `--modules` | Comma-separated modules (text,hidden,frequency,stego,structural,all) |
-| `--threshold` | Custom risk threshold |
-| `--languages` | OCR languages (default: eng) |
-| `--mark` | Save annotated image with overlays |
-| `--include-text` | Include extracted text in output |
 
 ## API Usage
 
