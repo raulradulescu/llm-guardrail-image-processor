@@ -80,9 +80,9 @@ if "obfuscation" in details:
 
 | Level | Score | Action |
 |-------|-------|--------|
-| SAFE | < 0.3 | Allow |
-| SUSPICIOUS | 0.3 - 0.6 | Review |
-| DANGEROUS | > 0.6 | Block |
+| SAFE | < 0.4 | Allow |
+| SUSPICIOUS | 0.4 - 0.6 | Review |
+| DANGEROUS | ≥ 0.6 | Block |
 
 ## Configuration
 

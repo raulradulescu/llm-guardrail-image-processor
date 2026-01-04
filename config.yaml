@@ -51,12 +51,12 @@ modules:
     analyze_decoded_content: true
 
 scoring:
-  # Classification thresholds per PRD Section 3.7.4:
-  # - SAFE: score < 0.3
-  # - SUSPICIOUS: 0.3 <= score < 0.6
+  # Classification thresholds:
+  # - SAFE: score < 0.4
+  # - SUSPICIOUS: 0.4 <= score < 0.6
   # - DANGEROUS: score >= 0.6
   thresholds:
-    safe: 0.3
+    safe: 0.4
     suspicious: 0.6
     dangerous: 0.6
   calibration_data: data/calibration.json

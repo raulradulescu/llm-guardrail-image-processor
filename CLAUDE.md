@@ -15,7 +15,7 @@
 | - | Production Hardening | ✅ |
 | - | Enhanced Features | ✅ |
 
-**Tests:** 27 passing | **Thresholds:** SAFE <0.3, SUSPICIOUS 0.3-0.6, DANGEROUS ≥0.6
+**Tests:** 27 passing | **Thresholds:** SAFE <0.4, SUSPICIOUS 0.4-0.6, DANGEROUS ≥0.6
 
 ## Quick Start
 
@@ -37,7 +37,7 @@ api:
   rate_limit_enabled: true  # 100 req/60s default
   metrics_enabled: true     # /metrics endpoint
 scoring:
-  thresholds: {safe: 0.3, suspicious: 0.6, dangerous: 0.6}
+  thresholds: {safe: 0.4, suspicious: 0.6, dangerous: 0.6}
 ```
 
 ## What Was Done

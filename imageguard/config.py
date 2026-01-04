@@ -11,7 +11,7 @@ import yaml
 
 @dataclass
 class Thresholds:
-    safe: float = 0.3
+    safe: float = 0.4
     suspicious: float = 0.6
     dangerous: float = 0.6
 
@@ -127,7 +127,7 @@ def load_config(path: str | None = None) -> Config:
     scoring = raw.get("scoring", {})
     th = scoring.get("thresholds", {})
     thresholds = Thresholds(
-        safe=th.get("safe", 0.3),
+        safe=th.get("safe", 0.4),
         suspicious=th.get("suspicious", 0.6),
         dangerous=th.get("dangerous", 0.6),
     )
