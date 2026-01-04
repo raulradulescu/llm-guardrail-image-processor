@@ -23,6 +23,7 @@ from .patterns import load_patterns
 from .steganography import analyze_steganography
 from .structural import analyze_structural
 from .calibration import load_calibration, platt_confidence
+from .overlays import create_marked_image
 
 
 CANONICAL_MODULES = {"text_extraction", "hidden_text", "frequency_analysis", "steganography", "structural"}
@@ -298,8 +299,10 @@ class ImageGuard:
 
         marked_image_path = None
         if return_marked:
+            # Create marked image with visual overlays for flagged regions
+            marked_image = create_marked_image(image, module_scores, languages=self.languages)
             with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp:
-                image.save(tmp.name, format="PNG")
+                marked_image.save(tmp.name, format="PNG")
                 marked_image_path = tmp.name
 
         # Calculate confidence based on module agreement and score distribution

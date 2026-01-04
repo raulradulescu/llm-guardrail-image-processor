@@ -12,7 +12,7 @@ modules:
   text_extraction:
     enabled: true
     weight: 2.0
-    languages: ["eng"]
+    languages: ["eng", "fra", "deu", "spa"]
     confidence_threshold: 0.6
     pattern_path: patterns.yaml
   hidden_text:

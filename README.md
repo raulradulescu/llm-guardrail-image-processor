@@ -13,9 +13,14 @@ Attackers embed malicious instructions in images to bypass text-based security. 
 - **Frequency Analysis** - Detects spectral anomalies (FFT, DCT, Wavelet)
 - **Steganography Detection** - LSB/chi-square/RS heuristics for hidden payloads
 - **Structural Analysis** - QR/barcode decode + screenshot/overlay heuristics
+- **Obfuscation Detection** - ROT13 and leetspeak decoding
+- **Magic Byte Validation** - Validates image headers match file extensions
+- **Visual Overlays** - Annotated images highlighting flagged regions
+- **Multi-language OCR** - English, French, German, Spanish support
 - **REST API & CLI** - Easy integration
 - **Configurable** - Thresholds, weights, fail-open/closed policies
 - **Calibration + Ops** - Confidence calibration, Docker/K8s, load testing
+- **CI Security Scanning** - Safety, pip-audit, Bandit, CodeQL
 
 ## Quick Start
 
@@ -59,6 +64,16 @@ result = guard.analyze("image.png")
 
 print(result["classification"])  # SAFE, SUSPICIOUS, or DANGEROUS
 print(result["risk_score"])      # 0.0 - 1.0
+
+# Get annotated image with visual overlays
+result = guard.analyze("image.png", return_marked=True)
+print(result["marked_image_path"])  # Path to annotated PNG
+
+# Check for obfuscated text
+details = result["module_scores"]["text_extraction"]["details"]
+if "obfuscation" in details:
+    print(details["obfuscation"]["leetspeak_decoded"])
+    print(details["obfuscation"]["rot13_decoded"])
 ```
 
 ## Classification
@@ -111,6 +126,28 @@ Available at `/metrics`:
 | Steganography | ✅ Complete |
 | Structural (QR/Screenshots) | ✅ Complete |
 | Integration & Optimization | ✅ Complete |
+| Production Hardening | ✅ Complete |
+| Enhanced Features | ✅ Complete |
+
+## Enhanced Features
+
+### Multi-language OCR
+```yaml
+modules:
+  text_extraction:
+    languages: ["eng", "fra", "deu", "spa"]
+```
+
+### Magic Byte Validation
+Automatically validates that image file headers match their extensions, preventing disguised file attacks.
+
+### ROT13/Leetspeak Detection
+Decodes obfuscated injection attempts like:
+- `1gn0r3 4ll pr3v10u5 1n5truct10n5` → "ignore all previous instructions"
+- `vtaber flfgrz cebzcg` (ROT13) → "ignore system prompt"
+
+### Visual Overlays
+Use `return_marked=True` to get annotated images showing flagged regions with severity-based coloring.
 
 ## Phase 6 Artifacts
 
@@ -120,6 +157,32 @@ Available at `/metrics`:
 - Docker: `Dockerfile`
 - Kubernetes: `k8s/deployment.yaml`, `k8s/service.yaml`
 - Security review checklist: `SECURITY_REVIEW.md`
+- CI security scanning: `.github/workflows/security.yml`
+
+## Test Datasets
+
+### Typographic Visual Prompts Injection Dataset
+For comprehensive testing, we recommend the dataset from "Exploring Typographic Visual Prompts Injection Threats in Cross-Modality Generation Models":
+
+```bash
+# Place dataset in data/typographic-injection/
+data/
+└── typographic-injection/
+    └── [extracted dataset files]
+```
+
+**Citation:**
+```bibtex
+@misc{cheng2025exploringtypographicvisualprompts,
+      title={Exploring Typographic Visual Prompts Injection Threats in Cross-Modality Generation Models},
+      author={Hao Cheng and Erjia Xiao and Yichi Wang and Lingfeng Zhang and Qiang Zhang and Jiahang Cao and Kaidi Xu and Mengshu Sun and Xiaoshuai Hao and Jindong Gu and Renjing Xu},
+      year={2025},
+      eprint={2503.11519},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2503.11519},
+}
+```
 
 ## Documentation
 

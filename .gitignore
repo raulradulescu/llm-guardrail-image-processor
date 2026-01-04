@@ -17,3 +17,6 @@ __pycache__/
 .DS_Store
 *.swp
 *.swo
+
+# Image testing
+image-dataset/
