@@ -47,6 +47,32 @@ DEFAULT_PATTERNS: List[Pattern] = [
         regex=r"(?:[A-Za-z0-9+/]{4}){10,}(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?",
         severity=0.7,
     ),
+    # Typographic visual injection patterns
+    Pattern(
+        "output_manipulation",
+        regex=r"(just\s+)?(output|respond|reply|answer|say)\s+['\"]?\w+['\"]?",
+        severity=0.85,
+    ),
+    Pattern(
+        "conditional_injection",
+        regex=r"when\s+(asked|prompted|questioned)\s+(about|for|regarding)",
+        severity=0.8,
+    ),
+    Pattern(
+        "response_override",
+        regex=r"(always|only|must)\s+(respond|output|say|reply)\s+(with|as)",
+        severity=0.9,
+    ),
+    Pattern(
+        "task_hijacking",
+        keywords=["instead of", "rather than", "not the", "override", "replace with"],
+        severity=0.75,
+    ),
+    Pattern(
+        "sorry_injection",
+        regex=r"(output|say|respond|reply)\s+['\"]?sorry['\"]?",
+        severity=0.85,
+    ),
 ]
 
 

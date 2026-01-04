@@ -137,6 +137,177 @@ def run_ocr(image: Image.Image, languages: Optional[List[str]] = None, psm: int 
     return text, avg_conf
 
 
+def _preprocess_for_ocr(image: Image.Image, method: str = "default") -> Image.Image:
+    """Apply preprocessing to improve OCR accuracy."""
+    from PIL import ImageOps, ImageFilter, ImageEnhance
+
+    img = image.convert("RGB")
+
+    if method == "default":
+        return img
+    elif method == "grayscale":
+        return ImageOps.grayscale(img)
+    elif method == "contrast":
+        gray = ImageOps.grayscale(img)
+        return ImageEnhance.Contrast(gray).enhance(2.0)
+    elif method == "threshold_light":
+        # For light text on varying backgrounds
+        gray = ImageOps.grayscale(img)
+        return gray.point(lambda x: 255 if x > 180 else 0)
+    elif method == "threshold_dark":
+        # For dark text
+        gray = ImageOps.grayscale(img)
+        return gray.point(lambda x: 255 if x < 100 else 0)
+    elif method == "invert_threshold":
+        # Invert then threshold - good for semi-transparent overlays
+        gray = ImageOps.grayscale(img)
+        inverted = ImageOps.invert(gray)
+        return inverted.point(lambda x: 255 if x > 50 else 0)
+    elif method == "sharpen":
+        return img.filter(ImageFilter.SHARPEN)
+
+    return img
+
+
+def _extract_regions(image: Image.Image) -> List[Tuple[Image.Image, str]]:
+    """Extract key regions where overlay text commonly appears."""
+    regions = []
+    w, h = image.size
+
+    # Full image
+    regions.append((image, "full"))
+
+    # Top strip (common for overlay text)
+    top_height = min(60, h // 5)
+    if top_height > 20:
+        regions.append((image.crop((0, 0, w, top_height)), "top"))
+
+    # Bottom strip
+    bottom_height = min(60, h // 5)
+    if bottom_height > 20:
+        regions.append((image.crop((0, h - bottom_height, w, h)), "bottom"))
+
+    # Top-left corner
+    corner_size = min(100, w // 3, h // 3)
+    if corner_size > 30:
+        regions.append((image.crop((0, 0, corner_size, corner_size)), "top_left"))
+
+    return regions
+
+
+def run_enhanced_ocr(
+    image: Image.Image,
+    languages: Optional[List[str]] = None,
+    scale_factor: int = 3,
+) -> Tuple[str, float, Dict]:
+    """Enhanced OCR with multiple preprocessing passes and region analysis.
+
+    Returns:
+        Tuple of (combined_text, confidence, details_dict)
+    """
+    try:
+        import pytesseract
+    except Exception as exc:
+        raise RuntimeError("pytesseract not available") from exc
+
+    lang_str = "+".join(languages) if languages else "eng"
+    all_texts = []
+    best_confidence = 0.0
+    region_results = {}
+
+    # Preprocessing methods to try
+    preprocess_methods = [
+        "default", "contrast", "threshold_light",
+        "invert_threshold", "sharpen"
+    ]
+
+    # PSM modes: 6=block, 7=single line, 11=sparse, 12=sparse with OSD
+    psm_modes = [6, 7, 11]
+
+    # Extract and process regions
+    regions = _extract_regions(image)
+
+    for region_img, region_name in regions:
+        region_texts = set()
+
+        # Scale up for better OCR
+        scaled = region_img.resize(
+            (region_img.width * scale_factor, region_img.height * scale_factor),
+            Image.LANCZOS
+        )
+
+        for method in preprocess_methods:
+            processed = _preprocess_for_ocr(scaled, method)
+
+            for psm in psm_modes:
+                try:
+                    config = f"--psm {psm}"
+                    text = pytesseract.image_to_string(
+                        processed, lang=lang_str, config=config
+                    ).strip()
+
+                    # Filter out garbage (very short or mostly non-alpha)
+                    if text and len(text) >= 3:
+                        alpha_ratio = sum(c.isalpha() or c.isspace() for c in text) / len(text)
+                        if alpha_ratio > 0.5:
+                            region_texts.add(text)
+
+                            # Get confidence for this result
+                            try:
+                                data = pytesseract.image_to_data(
+                                    processed, lang=lang_str, config=config,
+                                    output_type=pytesseract.Output.DICT
+                                )
+                                confs = [float(c) for c in data.get("conf", []) if c and float(c) >= 0]
+                                conf = sum(confs) / len(confs) if confs else 0.0
+                                best_confidence = max(best_confidence, conf)
+                            except Exception:
+                                pass
+                except Exception:
+                    continue
+
+        if region_texts:
+            # Combine unique texts from this region
+            combined = " | ".join(sorted(region_texts, key=len, reverse=True)[:3])
+            region_results[region_name] = combined
+            all_texts.extend(region_texts)
+
+    # Combine all unique text findings
+    unique_texts = list(set(all_texts))
+    # Sort by length (longer = more complete)
+    unique_texts.sort(key=len, reverse=True)
+
+    # Take top results and combine
+    combined_text = "\n".join(unique_texts[:5]) if unique_texts else ""
+
+    return combined_text, best_confidence, {"regions": region_results}
+
+
+def _clean_ocr_text(text: str) -> str:
+    """Clean OCR text for better pattern matching."""
+    # Remove common OCR noise characters
+    cleaned = re.sub(r'[|~=\-_<>{}^\[\]\\]+', ' ', text)
+    # Normalize whitespace
+    cleaned = re.sub(r'\s+', ' ', cleaned)
+    # Remove very short isolated characters (OCR artifacts)
+    cleaned = re.sub(r'\s[a-zA-Z]\s', ' ', cleaned)
+    return cleaned.strip()
+
+
+def _extract_sentences(text: str) -> List[str]:
+    """Extract coherent sentence-like segments from noisy OCR text."""
+    # Split by common separators
+    segments = re.split(r'[|\n]+', text)
+    sentences = []
+    for seg in segments:
+        cleaned = _clean_ocr_text(seg)
+        # Keep segments that look like actual sentences (have multiple words)
+        word_count = len([w for w in cleaned.split() if len(w) > 1])
+        if word_count >= 3:
+            sentences.append(cleaned)
+    return sentences
+
+
 def contains_imperative_structure(text: str) -> bool:
     imperative_markers = [
         r"\bignore\b",
@@ -146,6 +317,9 @@ def contains_imperative_structure(text: str) -> bool:
         r"\byou must\b",
         r"\byou will\b",
         r"\bdo not\b",
+        r"\bjust\s+output\b",
+        r"\bwhen\s+asked\b",
+        r"\balways\s+(say|respond|output)\b",
     ]
     pattern = re.compile("|".join(imperative_markers), re.IGNORECASE)
     return bool(pattern.search(text))
@@ -183,23 +357,36 @@ def analyze_text(
     include_text: bool = True,
     max_text_length: int = 10000,
     detect_obfuscation: bool = True,
+    use_enhanced_ocr: bool = True,
 ) -> Dict:
     """Perform OCR and pattern analysis, returning module details."""
-    # Try multiple PSM modes: 6 (block of text) and 11 (sparse text).
     extracted_text = ""
     confidence = 0.0
-    for psm in (6, 11):
-        text, conf = run_ocr(image, languages=languages, psm=psm)
-        if len(text.strip()) > len(extracted_text.strip()):
-            extracted_text, confidence = text, conf
-        if conf > 70 and text.strip():
-            break
+    ocr_details = {}
+
+    if use_enhanced_ocr:
+        # Use enhanced OCR with multi-pass preprocessing
+        extracted_text, confidence, ocr_details = run_enhanced_ocr(
+            image, languages=languages, scale_factor=3
+        )
+    else:
+        # Fallback to basic OCR with multiple PSM modes
+        for psm in (6, 11):
+            text, conf = run_ocr(image, languages=languages, psm=psm)
+            if len(text.strip()) > len(extracted_text.strip()):
+                extracted_text, confidence = text, conf
+            if conf > 70 and text.strip():
+                break
+
+    # Clean text for better pattern matching
+    cleaned_text = _clean_ocr_text(extracted_text)
+    text_sentences = _extract_sentences(extracted_text)
 
     # Check for obfuscated text (ROT13, leetspeak)
     obfuscation_result = None
     additional_matches = []
     if detect_obfuscation and extracted_text.strip():
-        obfuscation_result = detect_obfuscated_text(extracted_text)
+        obfuscation_result = detect_obfuscated_text(cleaned_text)
 
         # If obfuscation detected, also check decoded text for patterns
         if obfuscation_result.get("has_obfuscation"):
@@ -215,7 +402,14 @@ def analyze_text(
                     if m.id not in [am.id for am in additional_matches]:
                         additional_matches.append(m)
 
-    matched = find_matches(extracted_text, patterns=patterns)
+    # Match patterns against cleaned text and individual sentences
+    matched = find_matches(cleaned_text, patterns=patterns)
+    for sentence in text_sentences:
+        sentence_matches = find_matches(sentence, patterns=patterns)
+        for m in sentence_matches:
+            if m.id not in [om.id for om in matched]:
+                matched.append(m)
+
     # Combine original matches with matches from decoded text
     all_matched = matched + [m for m in additional_matches if m.id not in [om.id for om in matched]]
 
@@ -233,6 +427,10 @@ def analyze_text(
         "patterns_matched": [m.id for m in all_matched],
         "confidence": confidence,
     }
+
+    # Add region-specific OCR results if available
+    if ocr_details and ocr_details.get("regions"):
+        details["ocr_regions"] = ocr_details["regions"]
 
     # Add obfuscation details if detected
     if obfuscation_result and obfuscation_result.get("has_obfuscation"):

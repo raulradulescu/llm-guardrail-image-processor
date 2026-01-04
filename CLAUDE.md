@@ -63,6 +63,8 @@ scoring:
 | Marked image overlays | `overlays.py` | Visual annotations on flagged regions |
 | Multi-language OCR | `config.yaml` | Supports eng, fra, deu, spa |
 | CI security scan | `.github/workflows/security.yml` | Safety, pip-audit, Bandit, CodeQL |
+| Enhanced OCR | `text_analysis.py` | Multi-pass preprocessing, region extraction, scaling |
+| Visual injection patterns | `patterns.yaml` | Detects "output X", "when asked", conditional injection |
 
 ## What's Left (Optional)
 
