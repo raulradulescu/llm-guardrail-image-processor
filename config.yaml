@@ -15,6 +15,9 @@ modules:
     languages: ["eng", "fra", "deu", "spa"]
     confidence_threshold: 0.6
     pattern_path: patterns.yaml
+    # Tesseract OCR executable path (null = use system PATH)
+    # Windows example: C:/Program Files/Tesseract-OCR/tesseract.exe
+    tesseract_cmd: null
   hidden_text:
     enabled: true
     weight: 1.5

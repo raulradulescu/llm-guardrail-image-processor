@@ -396,12 +396,50 @@ def detect_obfuscated_text(text: str) -> Dict[str, any]:
     return result
 
 
-def run_ocr(image: Image.Image, languages: Optional[List[str]] = None, psm: int = 6) -> Tuple[str, float]:
+import os
+import sys
+
+# Common Windows Tesseract installation paths
+WINDOWS_TESSERACT_PATHS = [
+    r"C:\Program Files\Tesseract-OCR\tesseract.exe",
+    r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
+    r"C:\Tesseract-OCR\tesseract.exe",
+]
+
+
+def _find_tesseract() -> Optional[str]:
+    """Auto-detect Tesseract executable on Windows."""
+    if sys.platform == "win32":
+        for path in WINDOWS_TESSERACT_PATHS:
+            if os.path.exists(path):
+                return path
+    return None
+
+
+def configure_tesseract(tesseract_cmd: Optional[str] = None) -> None:
+    """Configure pytesseract with custom tesseract executable path.
+
+    If tesseract_cmd is None, attempts to auto-detect on Windows.
+    """
+    import pytesseract
+
+    cmd = tesseract_cmd
+    if not cmd and sys.platform == "win32":
+        cmd = _find_tesseract()
+
+    if cmd:
+        pytesseract.pytesseract.tesseract_cmd = cmd
+
+
+def run_ocr(image: Image.Image, languages: Optional[List[str]] = None, psm: int = 6, tesseract_cmd: Optional[str] = None) -> Tuple[str, float]:
     """Run pytesseract OCR; returns extracted text and average confidence (best-effort)."""
     try:
         import pytesseract
     except Exception as exc:
         raise RuntimeError("pytesseract not available") from exc
+
+    # Configure tesseract path (auto-detect on Windows if not provided)
+    configure_tesseract(tesseract_cmd)
 
     lang_str = "+".join(languages) if languages else "eng"
     config = f"--psm {psm}"
@@ -478,6 +516,7 @@ def run_enhanced_ocr(
     image: Image.Image,
     languages: Optional[List[str]] = None,
     scale_factor: int = 3,
+    tesseract_cmd: Optional[str] = None,
 ) -> Tuple[str, float, Dict]:
     """Enhanced OCR with multiple preprocessing passes and region analysis.
 
@@ -488,6 +527,9 @@ def run_enhanced_ocr(
         import pytesseract
     except Exception as exc:
         raise RuntimeError("pytesseract not available") from exc
+
+    # Configure tesseract path (auto-detect on Windows if not provided)
+    configure_tesseract(tesseract_cmd)
 
     lang_str = "+".join(languages) if languages else "eng"
     all_texts = []
@@ -637,6 +679,7 @@ def analyze_text(
     max_text_length: int = 10000,
     detect_obfuscation: bool = True,
     use_enhanced_ocr: bool = True,
+    tesseract_cmd: Optional[str] = None,
 ) -> Dict:
     """Perform OCR and pattern analysis, returning module details."""
     extracted_text = ""
@@ -646,12 +689,12 @@ def analyze_text(
     if use_enhanced_ocr:
         # Use enhanced OCR with multi-pass preprocessing
         extracted_text, confidence, ocr_details = run_enhanced_ocr(
-            image, languages=languages, scale_factor=3
+            image, languages=languages, scale_factor=3, tesseract_cmd=tesseract_cmd
         )
     else:
         # Fallback to basic OCR with multiple PSM modes
         for psm in (6, 11):
-            text, conf = run_ocr(image, languages=languages, psm=psm)
+            text, conf = run_ocr(image, languages=languages, psm=psm, tesseract_cmd=tesseract_cmd)
             if len(text.strip()) > len(extracted_text.strip()):
                 extracted_text, confidence = text, conf
             if conf > 70 and text.strip():

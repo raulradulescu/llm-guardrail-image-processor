@@ -25,25 +25,25 @@ def apply_clahe(gray: np.ndarray) -> np.ndarray:
     return clahe.apply(gray)
 
 
-def multi_threshold_ocr(gray: np.ndarray, languages: Optional[List[str]], thresholds: Sequence[int] | None = None) -> Tuple[List[str], List[int]]:
+def multi_threshold_ocr(gray: np.ndarray, languages: Optional[List[str]], thresholds: Sequence[int] | None = None, tesseract_cmd: Optional[str] = None) -> Tuple[List[str], List[int]]:
     texts: List[str] = []
     used_thresholds: List[int] = []
     for t in (thresholds or THRESHOLDS):
         _, binary = cv2.threshold(gray, t, 255, cv2.THRESH_BINARY)
         pil_img = Image.fromarray(binary)
-        text, _ = run_ocr(pil_img, languages=languages, psm=11)
+        text, _ = run_ocr(pil_img, languages=languages, psm=11, tesseract_cmd=tesseract_cmd)
         if text.strip():
             texts.append(text.strip())
             used_thresholds.append(t)
     return texts, used_thresholds
 
 
-def per_channel_ocr(image: Image.Image, languages: Optional[List[str]]) -> Tuple[List[str], List[str]]:
+def per_channel_ocr(image: Image.Image, languages: Optional[List[str]], tesseract_cmd: Optional[str] = None) -> Tuple[List[str], List[str]]:
     texts: List[str] = []
     channels_used: List[str] = []
     r, g, b = image.split()
     for name, channel in (("r", r), ("g", g), ("b", b)):
-        text, _ = run_ocr(channel, languages=languages, psm=11)
+        text, _ = run_ocr(channel, languages=languages, psm=11, tesseract_cmd=tesseract_cmd)
         if text.strip():
             texts.append(text.strip())
             channels_used.append(name)
@@ -72,15 +72,16 @@ def analyze_hidden_text(
     thresholds: Sequence[int] | None = None,
     edge_density_threshold: float = 0.15,
     edge_grid_size: int = 4,
+    tesseract_cmd: Optional[str] = None,
 ) -> Dict:
     gray = pil_to_cv_gray(image)
     enhanced = apply_clahe(gray)
 
-    base_text, _ = run_ocr(image, languages=languages, psm=6)
+    base_text, _ = run_ocr(image, languages=languages, psm=6, tesseract_cmd=tesseract_cmd)
     base_text = base_text.strip()
 
-    threshold_texts, used_thresholds = multi_threshold_ocr(enhanced, languages=languages, thresholds=thresholds)
-    channel_texts, channels_used = per_channel_ocr(image, languages=languages)
+    threshold_texts, used_thresholds = multi_threshold_ocr(enhanced, languages=languages, thresholds=thresholds, tesseract_cmd=tesseract_cmd)
+    channel_texts, channels_used = per_channel_ocr(image, languages=languages, tesseract_cmd=tesseract_cmd)
 
     all_hidden_texts = [t for t in threshold_texts + channel_texts if t and t not in base_text]
     combined_text = "\n".join(all_hidden_texts).strip()

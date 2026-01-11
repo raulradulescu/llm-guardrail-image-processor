@@ -176,6 +176,7 @@ def _draw_legend(image: Image.Image, regions: List[FlaggedRegion], font) -> Imag
 def extract_text_regions(
     image: Image.Image,
     languages: Optional[List[str]] = None,
+    tesseract_cmd: Optional[str] = None,
 ) -> List[FlaggedRegion]:
     """Extract text region bounding boxes from OCR data.
 
@@ -183,8 +184,12 @@ def extract_text_regions(
     """
     try:
         import pytesseract
+        from .text_analysis import configure_tesseract
     except ImportError:
         return []
+
+    # Configure tesseract path (auto-detect on Windows if not provided)
+    configure_tesseract(tesseract_cmd)
 
     regions = []
     lang_str = "+".join(languages) if languages else "eng"
@@ -224,6 +229,7 @@ def create_marked_image(
     image: Image.Image,
     module_scores: dict,
     languages: Optional[List[str]] = None,
+    tesseract_cmd: Optional[str] = None,
 ) -> Image.Image:
     """Create a marked image with overlays based on module results.
 
@@ -231,6 +237,7 @@ def create_marked_image(
         image: Original PIL Image
         module_scores: Dict of module results from analyzer
         languages: OCR languages for text region extraction
+        tesseract_cmd: Path to tesseract executable
 
     Returns:
         Marked PIL Image with visual annotations
@@ -241,7 +248,7 @@ def create_marked_image(
     if "text_extraction" in module_scores:
         text_result = module_scores["text_extraction"]
         if text_result.get("score", 0) > 0.1:
-            text_regions = extract_text_regions(image, languages)
+            text_regions = extract_text_regions(image, languages, tesseract_cmd=tesseract_cmd)
             # Adjust severity based on module score
             module_severity = text_result.get("score", 0.3)
             for region in text_regions:

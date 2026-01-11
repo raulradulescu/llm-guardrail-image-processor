@@ -26,6 +26,7 @@ class ModuleConfig:
     wavelet_enabled: bool = True
     pattern_path: str | None = None
     baseline_model: str | None = None
+    tesseract_cmd: str | None = None  # Path to tesseract executable
     analyze_corners: bool = True
     analyze_borders: bool = True
     edge_density_threshold: float = 0.15
@@ -144,6 +145,7 @@ def load_config(path: str | None = None) -> Config:
             wavelet_enabled=cfg.get("wavelet_enabled", True),
             pattern_path=cfg.get("pattern_path"),
             baseline_model=cfg.get("baseline_model"),
+            tesseract_cmd=cfg.get("tesseract_cmd"),
             analyze_corners=cfg.get("analyze_corners", True),
             analyze_borders=cfg.get("analyze_borders", True),
             edge_density_threshold=cfg.get("edge_density_threshold", 0.15),

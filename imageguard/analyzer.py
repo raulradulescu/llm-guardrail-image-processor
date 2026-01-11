@@ -126,6 +126,8 @@ class ImageGuard:
             try:
                 include_text = include_text if include_text is not None else (self.config.output.include_extracted_text if self.config.output else True)
                 max_len = max_text_length if max_text_length is not None else (self.config.output.max_text_length if self.config.output else 10000)
+                text_cfg = self.config.modules.get("text_extraction") if self.config.modules else None
+                tesseract_cmd = text_cfg.tesseract_cmd if text_cfg else None
                 text_result = analyze_text(
                     image,
                     pre.area,
@@ -133,6 +135,7 @@ class ImageGuard:
                     patterns=self.patterns,
                     include_text=include_text,
                     max_text_length=max_len,
+                    tesseract_cmd=tesseract_cmd,
                 )
             except Exception as exc:  # pragma: no cover - defensive
                 if not self.config.fail_open:
@@ -158,6 +161,9 @@ class ImageGuard:
                     thresholds = hidden_cfg.contrast_thresholds or hidden_cfg.thresholds
                 edge_threshold = hidden_cfg.edge_density_threshold if hidden_cfg else 0.15
                 edge_grid = hidden_cfg.edge_grid_size if hidden_cfg else 4
+                # Get tesseract_cmd from text_extraction config (shared between OCR modules)
+                text_cfg = self.config.modules.get("text_extraction") if self.config.modules else None
+                tesseract_cmd = text_cfg.tesseract_cmd if text_cfg else None
                 start = time.perf_counter()
                 hidden_result = analyze_hidden_text(
                     image,
@@ -167,6 +173,7 @@ class ImageGuard:
                     thresholds=thresholds,
                     edge_density_threshold=edge_threshold,
                     edge_grid_size=edge_grid,
+                    tesseract_cmd=tesseract_cmd,
                 )
                 elapsed = time.perf_counter() - start
             except Exception as exc:  # pragma: no cover - defensive
@@ -300,7 +307,9 @@ class ImageGuard:
         marked_image_path = None
         if return_marked:
             # Create marked image with visual overlays for flagged regions
-            marked_image = create_marked_image(image, module_scores, languages=self.languages)
+            text_cfg = self.config.modules.get("text_extraction") if self.config.modules else None
+            tesseract_cmd = text_cfg.tesseract_cmd if text_cfg else None
+            marked_image = create_marked_image(image, module_scores, languages=self.languages, tesseract_cmd=tesseract_cmd)
             with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp:
                 marked_image.save(tmp.name, format="PNG")
                 marked_image_path = tmp.name
