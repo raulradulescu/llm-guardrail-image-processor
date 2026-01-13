@@ -4,7 +4,7 @@ Lightweight guardrail to detect prompt injection attacks hidden in images before
 
 ## Why?
 
-Attackers embed malicious instructions in images to bypass text-based security. ImageGuard scans images using classical computer vision—no LLM required—to catch these attacks before they reach GPT-4V, Claude Vision, or Gemini.
+Attackers embed malicious instructions in images to bypass text-based security. ImageGuard scans images using classical computer vision: no LLM required to catch these attacks before they reach GPT-4V, Claude Vision, or Gemini.
 
 ## Features
 
