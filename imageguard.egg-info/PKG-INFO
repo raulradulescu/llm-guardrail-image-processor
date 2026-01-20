@@ -38,7 +38,7 @@ Attackers embed malicious instructions in images to bypass text-based security. 
 - **Frequency Analysis** - Detects spectral anomalies (FFT, DCT, Wavelet)
 - **Steganography Detection** - LSB/chi-square/RS heuristics for hidden payloads
 - **Structural Analysis** - QR/barcode decode + screenshot/overlay heuristics
-- **Obfuscation Detection** - ROT13 and leetspeak decoding
+- **Obfuscation Detection** - ROT13, leetspeak, and Unicode homoglyph decoding
 - **Magic Byte Validation** - Validates image headers match file extensions
 - **Visual Overlays** - Annotated images highlighting flagged regions
 - **Multi-language OCR** - English, French, German, Spanish support
@@ -56,9 +56,42 @@ pip install -r requirements.txt
 # System dependency (Ubuntu/Debian)
 sudo apt install tesseract-ocr
 
+# Install ImageGuard
+pip install -e .
+
 # Analyze an image
-python -m imageguard.cli analyze suspicious_image.png
+imageguard suspicious_image.png --pretty
 ```
+
+## CLI Usage
+
+```bash
+# Basic analysis
+imageguard image.png
+
+# Pretty JSON output
+imageguard image.png --pretty
+
+# Quick classification check
+imageguard image.png | jq '.result.classification'
+
+# Specific modules only
+imageguard image.png --modules text,hidden
+
+# Alternative methods
+python -m imageguard image.png
+./imageguard-cli image.png
+```
+
+**CLI Options:**
+| Option | Description |
+|--------|-------------|
+| `--pretty` | Pretty-print JSON output |
+| `--modules` | Comma-separated modules (text,hidden,frequency,stego,structural,all) |
+| `--threshold` | Custom risk threshold |
+| `--languages` | OCR languages (default: eng) |
+| `--mark` | Save annotated image with overlays |
+| `--include-text` | Include extracted text in output |
 
 ## API Usage
 
@@ -94,11 +127,16 @@ print(result["risk_score"])      # 0.0 - 1.0
 result = guard.analyze("image.png", return_marked=True)
 print(result["marked_image_path"])  # Path to annotated PNG
 
-# Check for obfuscated text
+# Check for obfuscated text (ROT13, leetspeak, homoglyphs)
 details = result["module_scores"]["text_extraction"]["details"]
 if "obfuscation" in details:
-    print(details["obfuscation"]["leetspeak_decoded"])
-    print(details["obfuscation"]["rot13_decoded"])
+    obf = details["obfuscation"]
+    print(obf["leetspeak_decoded"])      # Decoded leetspeak
+    print(obf["rot13_decoded"])          # Decoded ROT13
+    print(obf["homoglyph_normalized"])   # Normalized homoglyphs
+    if obf.get("homoglyph_details"):
+        print(obf["homoglyph_details"]["count"])        # Number of homoglyphs
+        print(obf["homoglyph_details"]["mixed_scripts"]) # True if mixed scripts
 ```
 
 ## Classification
@@ -170,6 +208,22 @@ Automatically validates that image file headers match their extensions, preventi
 Decodes obfuscated injection attempts like:
 - `1gn0r3 4ll pr3v10u5 1n5truct10n5` → "ignore all previous instructions"
 - `vtaber flfgrz cebzcg` (ROT13) → "ignore system prompt"
+
+### Unicode Homoglyph Detection
+Detects lookalike characters from other scripts used to bypass text filters:
+
+| Script | Example | Normalized |
+|--------|---------|------------|
+| Cyrillic | `іgnore` (U+0456) | `ignore` |
+| Greek | `αdmin` (U+03B1) | `admin` |
+| Fullwidth | `ｉｇｎｏｒｅ` | `ignore` |
+| Zero-width | `ig​nore` (U+200B) | `ignore` |
+
+**Capabilities:**
+- 100+ confusable character mappings
+- Mixed-script detection (Cyrillic + Latin = suspicious)
+- Zero-width character removal
+- Automatic normalization before pattern matching
 
 ### Visual Overlays
 Use `return_marked=True` to get annotated images showing flagged regions with severity-based coloring.
